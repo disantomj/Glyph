@@ -1,45 +1,55 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
-import { supabase } from './lib/supabase'; // Add this import
-import { useEffect, useState } from 'react'; // Add this import
+import { supabase } from './lib/supabase';
+import { useEffect, useState } from 'react';
+import WebMap from './components/WebMap';
 
 export default function App() {
-  const [data, setData] = useState([]); // Add state for your data
+  const [data, setData] = useState([]);
 
-  // Add your fetch function
   const fetchData = async () => {
     const { data, error } = await supabase
-      .from('your_table_name') // Replace with your actual table name
+      .from('your_table_name')
       .select('*')
     
     if (error) {
       console.error('Error:', error)
     } else {
       setData(data)
-      console.log('Data:', data) // You'll see this in the browser console
+      console.log('Data:', data)
     }
   }
 
-  // Fetch data when component loads
   useEffect(() => {
     fetchData()
   }, [])
 
   return (
     <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <Text>Supabase connected! Check console for data.</Text>
-      <StatusBar style="auto" />
-    </View>
+      {/* Add the WebMap component */}
+      <WebMap />
+
+      {/* Your content overlay */}
+      <View style={styles.overlay}>
+        <Text>Open up App.js to start working on your app!</Text>
+        <Text>Supabase connected! Check console for data.</Text>
+        <StatusBar style="auto" />
+      </View>
+    </View> // This closes the outer View
   );
 }
 
-// Your existing styles stay the same
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+  },
+  overlay: {
+    position: 'absolute',
+    top: 50,
+    left: 0,
+    right: 0,
     alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    padding: 10,
   },
 });
