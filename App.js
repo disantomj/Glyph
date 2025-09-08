@@ -9,7 +9,7 @@ export default function App() {
 
   const fetchData = async () => {
     const { data, error } = await supabase
-      .from('your_table_name')
+      .from('glyphs')
       .select('*')
     
     if (error) {
