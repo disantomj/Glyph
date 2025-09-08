@@ -1,37 +1,54 @@
-import { Platform, StyleSheet } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import mapboxgl from 'mapbox-gl';
+import AddGlyph from './AddGlyph';
 
 export default function WebMap() {
-  // Only render on web platform
-  if (Platform.OS !== 'web') {
-    return null;
-  }
+  const mapContainer = useRef(null);
+  const map = useRef(null);
+  const [showAddGlyph, setShowAddGlyph] = useState(false);
+  const [selectedCoords, setSelectedCoords] = useState(null);
 
-  // For web platform, use an iframe directly
+  useEffect(() => {
+    console.log('Map effect running...');
+    
+    if (map.current) return; // initialize map only once
+    
+    mapboxgl.accessToken = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
+    console.log('Creating map with token:', process.env.EXPO_PUBLIC_MAPBOX_TOKEN ? 'Token exists' : 'No token');
+    
+    map.current = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: 'mapbox://styles/mapbox/streets-v11',
+      center: [-74.0060, 40.7128],
+      zoom: 10
+    });
+
+    map.current.on('load', () => {
+      console.log('Map loaded successfully');
+    });
+
+    // Add click handler for placing glyphs
+    map.current.on('click', (e) => {
+      console.log('Map clicked!', e.lngLat);
+      const { lng, lat } = e.lngLat;
+      setSelectedCoords({ lng, lat });
+      setShowAddGlyph(true);
+    });
+  }, []);
+
   return (
-    <div style={styles.container}>
-      <iframe 
-        src={`https://api.mapbox.com/styles/v1/mapbox/streets-v11.html?title=true&access_token=pk.eyJ1IjoiYWFyb24tZmxldGNoZXI4NDIiLCJhIjoiY21mYTNibDFoMDlzeDJrcG81czM5MXlwaCJ9.qVEP338vG4rg9uX-ky1MVA#10/40.7128/-74.0060`}
-        style={styles.iframe}
-        title="Mapbox Map"
-      />
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <div ref={mapContainer} style={{ width: '100%', height: '100%' }} />
+      {showAddGlyph && (
+        <AddGlyph 
+          coordinates={selectedCoords}
+          onClose={() => setShowAddGlyph(false)}
+          onGlyphCreated={() => {
+            setShowAddGlyph(false);
+            // Optionally refresh map markers here
+          }}
+        />
+      )}
     </div>
   );
-}
-
-// For React Native Web, we need to handle styles differently
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-  },
-});
-
-// Add web-specific styles
-if (Platform.OS === 'web') {
-  styles.iframe = {
-    width: '100%',
-    height: '100%',
-    border: 'none',
-  };
 }
