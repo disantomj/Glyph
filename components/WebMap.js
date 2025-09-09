@@ -146,6 +146,15 @@ const loadNearbyGlyphs = async (userLat, userLng) => {
       markerElement.addEventListener('click', (e) => {
         e.stopPropagation(); // Prevent map click
         
+        // Track discovery if user is close enough (temporary user ID for now)
+        const tempUserId = 'temp-user-123'; // Replace with actual user ID when auth is ready
+        if (userLocation && GlyphService.isUserNearGlyph(userLocation.lat, userLocation.lng, glyph, 50)) {
+          try {
+            await GlyphService.recordGlyphDiscovery(tempUserId, glyph.id, userLocation.lat, userLocation.lng);
+          } catch (error) {
+            console.log('Discovery already recorded or error:', error);
+          }
+        }
         // Create popup with glyph info
         new mapboxgl.Popup()
           .setLngLat([glyph.longitude, glyph.latitude])
