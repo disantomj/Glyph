@@ -1,41 +1,55 @@
+// App.js
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
-import { supabase } from './lib/supabase';
+import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
 import { useEffect, useState } from 'react';
+import { supabase } from './lib/supabase';
 import WebMap from './components/WebMap';
+import Auth from './components/Auth';
+import UserProfile from './components/UserProfile';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
-export default function App() {
-  const [data, setData] = useState([]);
+// Main app component that uses auth context
+function MainApp() {
+  const { user, userProfile, loading } = useAuth();
 
-  const fetchData = async () => {
-    const { data, error } = await supabase
-      .from('glyphs')
-      .select('*')
-    
-    if (error) {
-      console.error('Error:', error)
-    } else {
-      setData(data)
-      console.log('Data:', data)
-    }
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.center]}>
+        <ActivityIndicator size="large" color="#2563eb" />
+        <Text style={{ marginTop: 10, fontSize: 16, color: '#666' }}>
+          Loading Glyph...
+        </Text>
+      </View>
+    );
   }
 
-  useEffect(() => {
-    fetchData()
-  }, [])
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <WebMap />
+        <Auth onAuthSuccess={(user) => console.log('Auth success:', user)} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      {/* Add the WebMap component */}
-      <WebMap />
+      <WebMap user={user} userProfile={userProfile} />
+      <UserProfile 
+        user={userProfile || user} 
+        onSignOut={() => console.log('Signed out')} 
+      />
+      <StatusBar style="auto" />
+    </View>
+  );
+}
 
-      {/* Your content overlay */}
-      <View style={styles.overlay}>
-        <Text>Open up App.js to start working on your app!</Text>
-        <Text>Supabase connected! Check console for data.</Text>
-        <StatusBar style="auto" />
-      </View>
-    </View> // This closes the outer View
+// Root app component with auth provider
+export default function App() {
+  return (
+    <AuthProvider>
+      <MainApp />
+    </AuthProvider>
   );
 }
 
@@ -43,13 +57,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  overlay: {
-    position: 'absolute',
-    top: 50,
-    left: 0,
-    right: 0,
+  center: {
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    padding: 10,
   },
 });
