@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import AddGlyph from './AddGlyph';
-import { supabase } from '../lib/supabase';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { GlyphService } from '../services/GlyphService';
 
 export default function WebMap() {
   const mapContainer = useRef(null);
@@ -43,7 +43,10 @@ export default function WebMap() {
         console.log('User location obtained:', location);
         setUserLocation(location);
         setIsLoadingLocation(false);
-        
+
+        // Load nearby glyphs once we have user location
+        loadNearbyGlyphs(latitude, longitude);
+
         // Center map on user location
         if (map.current) {
           map.current.flyTo({
@@ -101,25 +104,15 @@ export default function WebMap() {
       .addTo(map.current);
   };
 
-  // Load glyphs from database
-  const loadGlyphs = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('glyphs')
-        .select('*')
-        .eq('is_active', true);
-
-      if (error) {
-        console.error('Error loading glyphs:', error);
-      } else {
-        console.log('Loaded glyphs from database:', data);
-        console.log('Number of glyphs loaded:', data?.length);
-        setGlyphs(data || []);
-      }
-    } catch (err) {
-      console.error('Unexpected error loading glyphs:', err);
-    }
-  };
+  // Load nearby glyphs using GlyphService
+const loadNearbyGlyphs = async (userLat, userLng) => {
+  try {
+    const nearbyGlyphs = await GlyphService.loadNearbyGlyphs(userLat, userLng, 200);
+    setGlyphs(nearbyGlyphs);
+  } catch (error) {
+    console.error('Failed to load nearby glyphs:', error);
+  }
+};
 
   // Clear existing markers
   const clearMarkers = () => {
@@ -203,12 +196,9 @@ export default function WebMap() {
 
     map.current.on('load', () => {
       console.log('Map loaded successfully');
-      loadGlyphs(); // Load glyphs when map is ready
-      getUserLocation(); // Get user location when map is ready
+      getUserLocation(); // Get user location when map is ready (this will trigger glyph loading)
     });
 
-    // Remove the old click handler for glyph creation
-    // Users will now use the "Create Glyph Here" button instead
   }, []);
 
   // Add markers when glyphs change
@@ -225,7 +215,9 @@ export default function WebMap() {
 
   const handleGlyphCreated = () => {
     setShowAddGlyph(false);
-    loadGlyphs(); // Reload glyphs to show the new one
+    if (userLocation) {
+      loadNearbyGlyphs(userLocation.lat, userLocation.lng);
+    }
   };
 
   return (
