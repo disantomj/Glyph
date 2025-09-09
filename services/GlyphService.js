@@ -189,34 +189,139 @@ export class GlyphService {
     }
   }
 
-  // Search glyphs by text content
-  static async searchGlyphs(searchTerm, userLat = null, userLng = null, radiusMeters = 200) {
+  // Record when a user discovers a glyph (gets within range)
+  static async recordGlyphDiscovery(userId, glyphId, userLat, userLng) {
     try {
-      let glyphs;
-      
-      if (userLat && userLng) {
-        // Search within nearby glyphs
-        const nearbyGlyphs = await this.loadNearbyGlyphs(userLat, userLng, radiusMeters);
-        glyphs = nearbyGlyphs.filter(glyph => 
-          glyph.text?.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-      } else {
-        // Search all glyphs
-        const { data, error } = await supabase
-          .from('glyphs')
-          .select('*')
-          .textSearch('text', searchTerm)
-          .eq('is_active', true);
+      const { data, error } = await supabase
+        .from('glyph_discoveries')
+        .insert([{
+          user_id: userId,
+          glyph_id: glyphId,
+          discovery_location_lat: userLat,
+          discovery_location_lng: userLng
+        }])
+        .select();
 
-        if (error) throw error;
-        glyphs = data || [];
+      if (error && error.code !== '23505') { // Ignore duplicate key errors
+        console.error('Error recording glyph discovery:', error);
+        throw error;
       }
 
-      console.log(`Search results for "${searchTerm}":`, glyphs.length);
-      return glyphs;
+      console.log('Glyph discovery recorded:', data);
+      return data?.[0];
     } catch (err) {
-      console.error('Error searching glyphs:', err);
+      console.error('Unexpected error recording discovery:', err);
       throw err;
+    }
+  }
+
+  // Check if user has discovered a glyph
+  static async hasUserDiscoveredGlyph(userId, glyphId) {
+    try {
+      const { data, error } = await supabase
+        .from('glyph_discoveries')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('glyph_id', glyphId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+        throw error;
+      }
+
+      return !!data;
+    } catch (err) {
+      console.error('Error checking glyph discovery:', err);
+      return false;
+    }
+  }
+
+  // Get all glyphs discovered by a user
+  static async getUserDiscoveredGlyphs(userId) {
+    try {
+      const { data, error } = await supabase
+        .from('glyph_discoveries')
+        .select(`
+          *,
+          glyphs!inner (
+            id,
+            category,
+            text,
+            latitude,
+            longitude,
+            created_at,
+            is_active
+          )
+        `)
+        .eq('user_id', userId)
+        .eq('glyphs.is_active', true);
+
+      if (error) {
+        console.error('Error loading discovered glyphs:', error);
+        throw error;
+      }
+
+      // Extract the glyph data with discovery info
+      const discoveredGlyphs = data.map(discovery => ({
+        ...discovery.glyphs,
+        discovered_at: discovery.discovered_at,
+        discovery_location: {
+          lat: discovery.discovery_location_lat,
+          lng: discovery.discovery_location_lng
+        }
+      }));
+
+      console.log('User discovered glyphs:', discoveredGlyphs.length);
+      return discoveredGlyphs;
+    } catch (err) {
+      console.error('Error loading discovered glyphs:', err);
+      throw err;
+    }
+  }
+
+  // Search through user's discovered glyphs only
+  static async searchDiscoveredGlyphs(userId, searchTerm) {
+    try {
+      const discoveredGlyphs = await this.getUserDiscoveredGlyphs(userId);
+      
+      const matchingGlyphs = discoveredGlyphs.filter(glyph =>
+        glyph.text?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        glyph.category?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+
+      console.log(`Memory search results for "${searchTerm}":`, matchingGlyphs.length);
+      return matchingGlyphs;
+    } catch (err) {
+      console.error('Error searching discovered glyphs:', err);
+      throw err;
+    }
+  }
+
+  // Auto-discover glyphs when user gets nearby (call this periodically)
+  static async autoDiscoverNearbyGlyphs(userId, userLat, userLng, discoveryRadius = 50) {
+    try {
+      const nearbyGlyphs = await this.loadNearbyGlyphs(userLat, userLng, discoveryRadius);
+      const discoveries = [];
+
+      for (const glyph of nearbyGlyphs) {
+        const alreadyDiscovered = await this.hasUserDiscoveredGlyph(userId, glyph.id);
+        
+        if (!alreadyDiscovered) {
+          const discovery = await this.recordGlyphDiscovery(userId, glyph.id, userLat, userLng);
+          if (discovery) {
+            discoveries.push({ glyph, discovery });
+          }
+        }
+      }
+
+      if (discoveries.length > 0) {
+        console.log('New glyphs discovered:', discoveries.length);
+      }
+
+      return discoveries;
+    } catch (err) {
+      console.error('Error auto-discovering glyphs:', err);
+      return [];
     }
   }
 }

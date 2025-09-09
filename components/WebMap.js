@@ -143,7 +143,7 @@ const loadNearbyGlyphs = async (userLat, userLng) => {
         .addTo(map.current);
 
       // Add click handler to marker
-      markerElement.addEventListener('click', (e) => {
+      markerElement.addEventListener('click', async(e) => {
         e.stopPropagation(); // Prevent map click
         
         // Track discovery if user is close enough (temporary user ID for now)
