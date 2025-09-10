@@ -4,7 +4,8 @@ import AddGlyph from './AddGlyph';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { GlyphService } from '../services/GlyphService';
 
-export default function WebMap({ user, userProfile}) {
+export default function WebMap({ user, userProfile }) {
+  console.log('WebMap rendering with user:', user?.email, 'profile:', userProfile?.username);
   const mapContainer = useRef(null);
   const map = useRef(null);
   const [showAddGlyph, setShowAddGlyph] = useState(false);
@@ -105,14 +106,14 @@ export default function WebMap({ user, userProfile}) {
   };
 
   // Load nearby glyphs using GlyphService
-const loadNearbyGlyphs = async (userLat, userLng) => {
-  try {
-    const nearbyGlyphs = await GlyphService.loadNearbyGlyphs(userLat, userLng, 200);
-    setGlyphs(nearbyGlyphs);
-  } catch (error) {
-    console.error('Failed to load nearby glyphs:', error);
-  }
-};
+  const loadNearbyGlyphs = async (userLat, userLng) => {
+    try {
+      const nearbyGlyphs = await GlyphService.loadNearbyGlyphs(userLat, userLng, 200);
+      setGlyphs(nearbyGlyphs);
+    } catch (error) {
+      console.error('Failed to load nearby glyphs:', error);
+    }
+  };
 
   // Clear existing markers
   const clearMarkers = () => {
@@ -146,15 +147,16 @@ const loadNearbyGlyphs = async (userLat, userLng) => {
       markerElement.addEventListener('click', async(e) => {
         e.stopPropagation(); // Prevent map click
         
-        // Track discovery if user is close enough (temporary user ID for now)
-        const tempUserId = 'temp-user-123'; // Replace with actual user ID when auth is ready
+        // Track discovery if user is close enough and logged in
         if (user && userLocation && GlyphService.isUserNearGlyph(userLocation.lat, userLocation.lng, glyph, 50)) {
           try {
-            await GlyphService.recordGlyphDiscovery(tempUserId, glyph.id, userLocation.lat, userLocation.lng);
+            await GlyphService.recordGlyphDiscovery(user.id, glyph.id, userLocation.lat, userLocation.lng);
+            console.log('Glyph discovery recorded for user:', user.id);
           } catch (error) {
             console.log('Discovery already recorded or error:', error);
           }
         }
+        
         // Create popup with glyph info
         new mapboxgl.Popup()
           .setLngLat([glyph.longitude, glyph.latitude])
@@ -177,19 +179,19 @@ const loadNearbyGlyphs = async (userLat, userLng) => {
 
   // Create glyph at user's current location
   const createGlyphHere = () => {
-  if (!userLocation) {
-    alert('Location not available. Please enable location services and try again.');
-    return;
-  }
-  
-  if (userLocation.accuracy > 10) { // Only allow if accuracy is within 10 meters
-    alert(`GPS accuracy is too low (±${Math.round(userLocation.accuracy)}m). Please move to an open area and try again.`);
-    return;
-  }
-  
-  setSelectedCoords({ lat: userLocation.lat, lng: userLocation.lng });
-  setShowAddGlyph(true);
-};
+    if (!userLocation) {
+      alert('Location not available. Please enable location services and try again.');
+      return;
+    }
+    
+    if (userLocation.accuracy > 10) { // Only allow if accuracy is within 10 meters
+      alert(`GPS accuracy is too low (±${Math.round(userLocation.accuracy)}m). Please move to an open area and try again.`);
+      return;
+    }
+    
+    setSelectedCoords({ lat: userLocation.lat, lng: userLocation.lng });
+    setShowAddGlyph(true);
+  };
 
   useEffect(() => {
     console.log('Map effect running...');

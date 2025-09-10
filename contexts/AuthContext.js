@@ -20,12 +20,19 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Get initial session
     const getInitialSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error('Error getting session:', error);
-      } else if (session?.user) {
-        setUser(session.user);
-        await fetchUserProfile(session.user.id);
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Error getting session:', error);
+        } else if (session?.user) {
+          console.log('Initial session found:', session.user.email);
+          setUser(session.user);
+          await fetchUserProfile(session.user.id);
+        } else {
+          console.log('No initial session found');
+        }
+      } catch (err) {
+        console.error('Unexpected error getting session:', err);
       }
       setLoading(false);
     };
@@ -35,7 +42,7 @@ export const AuthProvider = ({ children }) => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session);
+        console.log('Auth state changed:', event, session?.user?.email || 'no user');
         
         if (session?.user) {
           setUser(session.user);
@@ -55,15 +62,42 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUserProfile = async (userId) => {
     try {
+      console.log('Fetching user profile for ID:', userId);
+      
       const { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('id', userId)
         .single();
 
-      if (error) {
+      if (error && error.code === 'PGRST116') {
+        console.log('Profile not found, creating one');
+        // Profile doesn't exist, create one directly
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const username = user.email?.split('@')[0] || 'Explorer';
+          
+          const { data: newProfile, error: createError } = await supabase
+            .from('users')
+            .insert({
+              id: user.id,
+              username: username,
+              email: user.email,
+            })
+            .select()
+            .single();
+
+          if (createError && createError.code !== '23505') {
+            console.error('Error creating profile:', createError);
+          } else if (newProfile) {
+            console.log('User profile created:', newProfile);
+            setUserProfile(newProfile);
+          }
+        }
+      } else if (error) {
         console.error('Error fetching user profile:', error);
       } else {
+        console.log('User profile fetched:', data);
         setUserProfile(data);
       }
     } catch (err) {
@@ -82,29 +116,11 @@ export const AuthProvider = ({ children }) => {
       });
       return { data, error };
     },
-    signUp: async (email, password, username) => {
+    signUp: async (email, password) => {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
       });
-
-      if (data.user && !error) {
-        // Create user profile
-        const { error: profileError } = await supabase
-          .from('users')
-          .insert([
-            {
-              id: data.user.id,
-              username: username,
-              email: email,
-            }
-          ]);
-
-        if (profileError) {
-          console.error('Error creating profile:', profileError);
-        }
-      }
-
       return { data, error };
     },
     signOut: async () => {
