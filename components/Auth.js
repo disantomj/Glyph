@@ -21,26 +21,24 @@ export default function Auth({ onAuthSuccess }) {
         const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: {
+              username: username, // Store username in auth metadata
+            }
+          }
         });
 
         if (signUpError) throw signUpError;
 
-        // Create user profile
-        if (data.user) {
-          const { error: profileError } = await supabase
-            .from('users')
-            .insert([
-              {
-                id: data.user.id,
-                username: username,
-                email: email,
-              }
-            ]);
-
-          if (profileError) throw profileError;
+        // Note: User profile will be created automatically via database trigger
+        // or we can create it here if the user is immediately confirmed
+        if (data.user && !data.user.email_confirmed_at) {
+          alert('Check your email for the confirmation link!');
+        } else if (data.user) {
+          // User is immediately confirmed (for development)
+          await createUserProfile(data.user, username);
+          onAuthSuccess(data.user);
         }
-
-        alert('Check your email for the confirmation link!');
       } else {
         // Sign in existing user
         const { data, error: signInError } = await supabase.auth.signInWithPassword({
@@ -58,6 +56,8 @@ export default function Auth({ onAuthSuccess }) {
       setLoading(false);
     }
   };
+
+
 
   return (
     <div style={{
@@ -101,6 +101,9 @@ export default function Auth({ onAuthSuccess }) {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
+              minLength={3}
+              maxLength={30}
+              pattern="[a-zA-Z0-9_\-]+"
               style={{
                 width: '100%',
                 padding: '12px',
@@ -109,7 +112,7 @@ export default function Auth({ onAuthSuccess }) {
                 fontSize: '16px',
                 boxSizing: 'border-box'
               }}
-              placeholder="Choose a username"
+              placeholder="Choose a username (3-30 chars, letters/numbers/_/-)"
             />
           </div>
         )}
@@ -144,6 +147,7 @@ export default function Auth({ onAuthSuccess }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            minLength={6}
             style={{
               width: '100%',
               padding: '12px',
@@ -152,7 +156,7 @@ export default function Auth({ onAuthSuccess }) {
               fontSize: '16px',
               boxSizing: 'border-box'
             }}
-            placeholder="Create a secure password"
+            placeholder="Create a secure password (min 6 chars)"
           />
         </div>
 

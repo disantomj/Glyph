@@ -4,7 +4,7 @@ import AddGlyph from './AddGlyph';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { GlyphService } from '../services/GlyphService';
 
-export default function WebMap() {
+export default function WebMap({ user, userProfile}) {
   const mapContainer = useRef(null);
   const map = useRef(null);
   const [showAddGlyph, setShowAddGlyph] = useState(false);
@@ -148,7 +148,7 @@ const loadNearbyGlyphs = async (userLat, userLng) => {
         
         // Track discovery if user is close enough (temporary user ID for now)
         const tempUserId = 'temp-user-123'; // Replace with actual user ID when auth is ready
-        if (userLocation && GlyphService.isUserNearGlyph(userLocation.lat, userLocation.lng, glyph, 50)) {
+        if (user && userLocation && GlyphService.isUserNearGlyph(userLocation.lat, userLocation.lng, glyph, 50)) {
           try {
             await GlyphService.recordGlyphDiscovery(tempUserId, glyph.id, userLocation.lat, userLocation.lng);
           } catch (error) {
@@ -163,6 +163,9 @@ const loadNearbyGlyphs = async (userLat, userLng) => {
               <h4>${categoryIcons[glyph.category]} ${glyph.category}</h4>
               <p>${glyph.text}</p>
               <small>Created: ${new Date(glyph.created_at).toLocaleDateString()}</small>
+              ${user && userLocation && GlyphService.isUserNearGlyph(userLocation.lat, userLocation.lng, glyph, 50) 
+                ? '<br><em style="color: green;">✨ Discovered!</em>' 
+                : ''}
             </div>
           `)
           .addTo(map.current);
@@ -317,6 +320,7 @@ const loadNearbyGlyphs = async (userLat, userLng) => {
           coordinates={selectedCoords}
           onClose={() => setShowAddGlyph(false)}
           onGlyphCreated={handleGlyphCreated}
+          user={user}
         />
       )}
     </div>
