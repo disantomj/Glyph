@@ -17,7 +17,7 @@ export class GlyphService {
     return R * c;
   }
 
-  // Load all active glyphs from database
+  // Load all active glyphs from database (simplified to work with current structure)
   static async loadAllGlyphs() {
     try {
       console.log('🔍 Starting loadAllGlyphs...');
@@ -52,7 +52,7 @@ export class GlyphService {
       console.log('📍 User location:', { lat: userLat, lng: userLng });
       console.log('📏 Search radius:', radiusMeters, 'meters');
 
-      // Load all glyphs first (later optimization: server-side spatial filtering)
+      // Load all glyphs first
       const allGlyphs = await this.loadAllGlyphs();
       
       console.log('🗂️ All glyphs loaded, filtering by distance...');
@@ -83,24 +83,6 @@ export class GlyphService {
       console.log(`  📍 Nearby glyphs (within ${radiusMeters}m): ${nearbyGlyphs.length}`);
       console.log(`  🧭 User location: ${userLat.toFixed(6)}, ${userLng.toFixed(6)}`);
       
-      if (nearbyGlyphs.length > 0) {
-        console.log('🎉 Nearby glyphs found:', nearbyGlyphs.map(g => ({
-          id: g.id,
-          category: g.category,
-          distance: Math.round(this.calculateDistance(userLat, userLng, g.latitude, g.longitude)) + 'm'
-        })));
-      } else {
-        console.log('😕 No nearby glyphs found. Closest glyphs:');
-        const distances = allGlyphs.map(glyph => ({
-          id: glyph.id,
-          category: glyph.category,
-          distance: Math.round(this.calculateDistance(userLat, userLng, glyph.latitude, glyph.longitude)),
-          location: { lat: glyph.latitude, lng: glyph.longitude }
-        })).sort((a, b) => a.distance - b.distance).slice(0, 3);
-        
-        console.log('🔍 3 closest glyphs:', distances);
-      }
-      
       return nearbyGlyphs;
     } catch (err) {
       console.error('💥 Error loading nearby glyphs:', err);
@@ -108,7 +90,7 @@ export class GlyphService {
     }
   }
 
-  // Create a new glyph at specific coordinates
+  // Create a new glyph (simplified)
   static async createGlyph(glyphData) {
     try {
       console.log('✨ Creating glyph:', glyphData);
@@ -116,7 +98,7 @@ export class GlyphService {
       const { data, error } = await supabase
         .from('glyphs')
         .insert([glyphData])
-        .select(); // Return the created glyph
+        .select();
 
       if (error) {
         console.error('❌ Error creating glyph:', JSON.stringify(error, null, 2));
@@ -124,14 +106,41 @@ export class GlyphService {
       }
 
       console.log('✅ Glyph created successfully:', data);
-      return data[0]; // Return the created glyph
+      return data[0];
     } catch (err) {
       console.error('💥 Unexpected error creating glyph:', err);
       throw err;
     }
   }
 
-  // Get a single glyph by ID
+  // Upload photo to Supabase Storage
+  static async uploadGlyphPhoto(file, glyphId) {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${glyphId}_${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('glyph-photos')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('glyph-photos')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (err) {
+      console.error('Error uploading photo:', err);
+      throw err;
+    }
+  }
+
+  // Get a single glyph by ID (simplified for current database)
   static async getGlyphById(glyphId) {
     try {
       const { data, error } = await supabase
@@ -146,10 +155,127 @@ export class GlyphService {
         throw error;
       }
 
-      return data;
+      // Add default values for enhanced features
+      return {
+        ...data,
+        rating_avg: data.rating_avg || 0,
+        rating_count: data.rating_count || 0,
+        comment_count: data.comment_count || 0,
+        users: { username: 'Explorer' } // Default username
+      };
     } catch (err) {
       console.error('Unexpected error fetching glyph:', err);
       throw err;
+    }
+  }
+
+  // Rate a glyph (1-5 stars) - Check if tables exist first
+  static async rateGlyph(glyphId, userId, rating) {
+    try {
+      if (rating < 1 || rating > 5) {
+        throw new Error('Rating must be between 1 and 5');
+      }
+
+      const { data, error } = await supabase
+        .from('glyph_ratings')
+        .upsert({
+          glyph_id: glyphId,
+          user_id: userId,
+          rating: rating,
+          updated_at: new Date().toISOString()
+        })
+        .select();
+
+      if (error) {
+        console.error('Error rating glyph (table may not exist):', error);
+        throw error;
+      }
+
+      console.log('Glyph rated successfully:', data);
+      return data[0];
+    } catch (err) {
+      console.error('Rating feature not available - check database schema:', err);
+      throw err;
+    }
+  }
+
+  // Add comment to a glyph - Check if tables exist first
+  static async addComment(glyphId, userId, comment) {
+    try {
+      if (!comment || comment.trim().length === 0) {
+        throw new Error('Comment cannot be empty');
+      }
+
+      const { data, error } = await supabase
+        .from('glyph_comments')
+        .insert({
+          glyph_id: glyphId,
+          user_id: userId,
+          comment: comment.trim()
+        })
+        .select('*');
+
+      if (error) {
+        console.error('Error adding comment (table may not exist):', error);
+        throw error;
+      }
+
+      console.log('Comment added successfully:', data);
+      return {
+        ...data[0],
+        users: { username: 'Explorer' } // Default username
+      };
+    } catch (err) {
+      console.error('Comment feature not available - check database schema:', err);
+      throw err;
+    }
+  }
+
+  // Get comments for a glyph
+  static async getGlyphComments(glyphId, limit = 50) {
+    try {
+      const { data, error } = await supabase
+        .from('glyph_comments')
+        .select('*')
+        .eq('glyph_id', glyphId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('Error fetching comments (table may not exist):', error);
+        return [];
+      }
+
+      // Add default usernames
+      return (data || []).map(comment => ({
+        ...comment,
+        users: { username: 'Explorer' }
+      }));
+    } catch (err) {
+      console.error('Comment feature not available:', err);
+      return [];
+    }
+  }
+
+  // Get user's rating for a specific glyph
+  static async getUserRating(glyphId, userId) {
+    try {
+      const { data, error } = await supabase
+        .from('glyph_ratings')
+        .select('rating')
+        .eq('glyph_id', glyphId)
+        .eq('user_id', userId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching user rating (table may not exist):', error);
+        return null;
+      }
+
+      return data?.rating || null;
+    } catch (err) {
+      console.error('Rating feature not available:', err);
+      return null;
     }
   }
 
@@ -212,11 +338,9 @@ export class GlyphService {
       let glyphs;
       
       if (userLat && userLng) {
-        // Load nearby glyphs and filter by category
         const nearbyGlyphs = await this.loadNearbyGlyphs(userLat, userLng, radiusMeters);
         glyphs = nearbyGlyphs.filter(glyph => glyph.category === category);
       } else {
-        // Load all glyphs and filter by category
         const { data, error } = await supabase
           .from('glyphs')
           .select('*')
@@ -289,15 +413,7 @@ export class GlyphService {
         .from('glyph_discoveries')
         .select(`
           *,
-          glyphs!inner (
-            id,
-            category,
-            text,
-            latitude,
-            longitude,
-            created_at,
-            is_active
-          )
+          glyphs!inner (*)
         `)
         .eq('user_id', userId)
         .eq('glyphs.is_active', true);
@@ -307,7 +423,6 @@ export class GlyphService {
         throw error;
       }
 
-      // Extract the glyph data with discovery info
       const discoveredGlyphs = data.map(discovery => ({
         ...discovery.glyphs,
         discovered_at: discovery.discovered_at,
@@ -321,24 +436,6 @@ export class GlyphService {
       return discoveredGlyphs;
     } catch (err) {
       console.error('Error loading discovered glyphs:', err);
-      throw err;
-    }
-  }
-
-  // Search through user's discovered glyphs only
-  static async searchDiscoveredGlyphs(userId, searchTerm) {
-    try {
-      const discoveredGlyphs = await this.getUserDiscoveredGlyphs(userId);
-      
-      const matchingGlyphs = discoveredGlyphs.filter(glyph =>
-        glyph.text?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        glyph.category?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-
-      console.log(`Memory search results for "${searchTerm}":`, matchingGlyphs.length);
-      return matchingGlyphs;
-    } catch (err) {
-      console.error('Error searching discovered glyphs:', err);
       throw err;
     }
   }

@@ -1,40 +1,104 @@
 // components/AddGlyph.js
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { GlyphService } from '../services/GlyphService';
 
 export default function AddGlyph({ coordinates, onClose, onGlyphCreated, user }) {
   const [message, setMessage] = useState('');
   const [category, setCategory] = useState('Hint');
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size must be less than 5MB');
+        return;
+      }
+      
+      setSelectedFile(file);
+      
+      // Create preview URL
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    }
+  };
+
+  const removePhoto = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setSelectedFile(null);
+    setPreviewUrl(null);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
+      let photoUrl = null;
+
+      // Create the glyph first
+      const glyphData = {
+        latitude: coordinates.lat,
+        longitude: coordinates.lng,
+        text: message,
+        category: category,
+        user_id: user?.id || null,
+        is_active: true,
+        score: 0
+      };
+
       const { data, error } = await supabase
         .from('glyphs')
-        .insert([
-          {
-            latitude: coordinates.lat,
-            longitude: coordinates.lng,
-            text: message,
-            category: category,
-            user_id: user?.id || null, // Now using the actual user ID
-            is_active: true,
-            score: 0
-          }
-        ])
-        .select(); // Add select to get the created glyph back
+        .insert([glyphData])
+        .select();
 
       if (error) {
         console.error('Error creating glyph:', JSON.stringify(error, null, 2));
         alert('Error creating glyph. Please try again.');
-      } else {
-        console.log('Glyph created successfully:', data);
-        onGlyphCreated(data[0]); // Pass the created glyph back
-        alert('Glyph created! Other explorers can now discover it.');
+        return;
       }
+
+      const createdGlyph = data[0];
+
+      // Upload photo if selected
+      if (selectedFile) {
+        try {
+          photoUrl = await GlyphService.uploadGlyphPhoto(selectedFile, createdGlyph.id);
+          
+          // Update glyph with photo URL
+          const { error: updateError } = await supabase
+            .from('glyphs')
+            .update({ photo_url: photoUrl })
+            .eq('id', createdGlyph.id);
+
+          if (updateError) {
+            console.error('Error updating glyph with photo:', updateError);
+            // Don't fail the whole operation, just log the error
+          } else {
+            createdGlyph.photo_url = photoUrl;
+          }
+        } catch (photoError) {
+          console.error('Error uploading photo:', photoError);
+          alert('Glyph created but photo upload failed. You can add a photo later.');
+        }
+      }
+
+      console.log('Glyph created successfully:', createdGlyph);
+      onGlyphCreated(createdGlyph);
+      alert('Glyph created! Other explorers can now discover it.');
+      
     } catch (err) {
       console.error('Unexpected error:', err);
       alert('Unexpected error. Please try again.');
@@ -54,8 +118,10 @@ export default function AddGlyph({ coordinates, onClose, onGlyphCreated, user })
       borderRadius: '12px',
       boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
       zIndex: 1000,
-      minWidth: '350px',
-      maxWidth: '400px'
+      minWidth: '400px',
+      maxWidth: '500px',
+      maxHeight: '90vh',
+      overflow: 'auto'
     }}>
       <h3 style={{ margin: '0 0 15px 0', fontSize: '20px', color: '#333' }}>
         🔮 Create New Glyph
@@ -72,6 +138,7 @@ export default function AddGlyph({ coordinates, onClose, onGlyphCreated, user })
       </p>
       
       <form onSubmit={handleSubmit}>
+        {/* Category Selection */}
         <div style={{ marginBottom: '15px' }}>
           <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#333' }}>
             Glyph Type:
@@ -95,7 +162,90 @@ export default function AddGlyph({ coordinates, onClose, onGlyphCreated, user })
             <option value="Lore">👁️ Lore - History & stories</option>
           </select>
         </div>
+
+        {/* Photo Upload Section */}
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#333' }}>
+            Photo (optional):
+          </label>
+          
+          {!selectedFile ? (
+            <div style={{
+              border: '2px dashed #e1e5e9',
+              borderRadius: '8px',
+              padding: '20px',
+              textAlign: 'center',
+              backgroundColor: '#f8f9fa',
+              cursor: 'pointer',
+              transition: 'border-color 0.2s'
+            }}
+            onClick={() => document.getElementById('photo-input').click()}
+            onMouseEnter={(e) => e.target.style.borderColor = '#2563eb'}
+            onMouseLeave={(e) => e.target.style.borderColor = '#e1e5e9'}
+            >
+              <div style={{ fontSize: '32px', marginBottom: '8px' }}>📷</div>
+              <p style={{ margin: '0 0 5px 0', fontSize: '14px', color: '#666' }}>
+                Click to add a photo
+              </p>
+              <p style={{ margin: 0, fontSize: '12px', color: '#999' }}>
+                JPG, PNG up to 5MB
+              </p>
+              <input
+                id="photo-input"
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                style={{ display: 'none' }}
+              />
+            </div>
+          ) : (
+            <div style={{ position: 'relative' }}>
+              <img
+                src={previewUrl}
+                alt="Preview"
+                style={{
+                  width: '100%',
+                  height: '150px',
+                  objectFit: 'cover',
+                  borderRadius: '8px',
+                  border: '2px solid #e1e5e9'
+                }}
+              />
+              <button
+                type="button"
+                onClick={removePhoto}
+                style={{
+                  position: 'absolute',
+                  top: '8px',
+                  right: '8px',
+                  backgroundColor: 'rgba(220, 53, 69, 0.9)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '24px',
+                  height: '24px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                ✕
+              </button>
+              <div style={{
+                marginTop: '8px',
+                fontSize: '12px',
+                color: '#666',
+                textAlign: 'center'
+              }}>
+                {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(1)}MB)
+              </div>
+            </div>
+          )}
+        </div>
         
+        {/* Message Input */}
         <div style={{ marginBottom: '20px' }}>
           <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#333' }}>
             Message:
@@ -128,6 +278,7 @@ export default function AddGlyph({ coordinates, onClose, onGlyphCreated, user })
           </div>
         </div>
         
+        {/* Action Buttons */}
         <div style={{ display: 'flex', gap: '12px' }}>
           <button 
             type="submit" 

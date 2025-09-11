@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import AddGlyph from './AddGlyph';
+import GlyphDetailModal from './GlyphDetailModal';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { GlyphService } from '../services/GlyphService';
 
@@ -10,12 +11,14 @@ export default function WebMap({ user, userProfile }) {
   const map = useRef(null);
   const [showAddGlyph, setShowAddGlyph] = useState(false);
   const [selectedCoords, setSelectedCoords] = useState(null);
+  const [selectedGlyph, setSelectedGlyph] = useState(null);
   const [glyphs, setGlyphs] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
   const [locationError, setLocationError] = useState(null);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
-  const markersRef = useRef([]); // Keep track of markers for cleanup
-  const userMarkerRef = useRef(null); // Keep track of user location marker
+  const markersRef = useRef([]);
+  const userMarkerRef = useRef(null);
+  const glyphsRenderedRef = useRef(new Set()); // Track which glyphs have been rendered
 
   // Category icons mapping
   const categoryIcons = {
@@ -78,7 +81,7 @@ export default function WebMap({ user, userProfile }) {
       {
         enableHighAccuracy: true,
         timeout: 30000,
-        maximumAge: 0 // Accept cached location up to 1 minute old
+        maximumAge: 0
       }
     );
   };
@@ -115,37 +118,70 @@ export default function WebMap({ user, userProfile }) {
     }
   };
 
-  // Clear existing markers
-  const clearMarkers = () => {
+  // Clear all existing glyph markers
+  const clearAllMarkers = () => {
     markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
+    glyphsRenderedRef.current.clear();
   };
 
-  // Add markers to map
+  // Add markers to map (only add new ones, don't recreate existing)
   const addMarkersToMap = () => {
     if (!map.current) return;
 
-    console.log('Adding markers for glyphs:', glyphs);
-    console.log('Number of glyphs to display:', glyphs.length);
-
-    clearMarkers();
+    console.log('Adding markers for glyphs:', glyphs.length);
 
     glyphs.forEach(glyph => {
-      // Create a custom marker element
+      // Skip if this glyph is already rendered
+      if (glyphsRenderedRef.current.has(glyph.id)) {
+        return;
+      }
+
+      // Mark this glyph as rendered
+      glyphsRenderedRef.current.add(glyph.id);
+
+      // Create a stable marker element
       const markerElement = document.createElement('div');
+      const isHighRated = glyph.rating_avg >= 4.0 && glyph.rating_count >= 3;
+      
       markerElement.innerHTML = categoryIcons[glyph.category] || '📍';
-      markerElement.style.fontSize = '24px';
-      markerElement.style.cursor = 'pointer';
+      markerElement.style.cssText = `
+        font-size: 24px;
+        cursor: pointer;
+        filter: ${isHighRated 
+          ? 'drop-shadow(0 0 6px rgba(255, 193, 7, 0.8))' 
+          : 'drop-shadow(0 0 3px rgba(0,0,0,0.3))'};
+        user-select: none;
+        pointer-events: auto;
+        display: block;
+        line-height: 1;
+        text-align: center;
+        will-change: auto;
+      `;
       markerElement.title = `${glyph.category}: ${glyph.text?.substring(0, 50)}...`;
 
-      // Create and add marker
-      const marker = new mapboxgl.Marker(markerElement)
+      // Simplified hover effects that don't interfere with positioning
+      markerElement.addEventListener('mouseenter', () => {
+        markerElement.style.opacity = '0.8';
+      });
+      
+      markerElement.addEventListener('mouseleave', () => {
+        markerElement.style.opacity = '1';
+      });
+
+      // Create marker with stable options
+      const marker = new mapboxgl.Marker({
+        element: markerElement,
+        anchor: 'bottom',
+        offset: [0, 0]
+      })
         .setLngLat([glyph.longitude, glyph.latitude])
         .addTo(map.current);
 
-      // Add click handler to marker
+      // Add click handler to marker element
       markerElement.addEventListener('click', async(e) => {
-        e.stopPropagation(); // Prevent map click
+        e.stopPropagation();
+        e.preventDefault();
         
         // Track discovery if user is close enough and logged in
         if (user && userLocation && GlyphService.isUserNearGlyph(userLocation.lat, userLocation.lng, glyph, 50)) {
@@ -157,24 +193,14 @@ export default function WebMap({ user, userProfile }) {
           }
         }
         
-        // Create popup with glyph info
-        new mapboxgl.Popup()
-          .setLngLat([glyph.longitude, glyph.latitude])
-          .setHTML(`
-            <div style="padding: 10px;">
-              <h4>${categoryIcons[glyph.category]} ${glyph.category}</h4>
-              <p>${glyph.text}</p>
-              <small>Created: ${new Date(glyph.created_at).toLocaleDateString()}</small>
-              ${user && userLocation && GlyphService.isUserNearGlyph(userLocation.lat, userLocation.lng, glyph, 50) 
-                ? '<br><em style="color: green;">✨ Discovered!</em>' 
-                : ''}
-            </div>
-          `)
-          .addTo(map.current);
+        // Open detailed modal
+        setSelectedGlyph(glyph);
       });
 
       markersRef.current.push(marker);
     });
+
+    console.log('Total markers on map:', markersRef.current.length);
   };
 
   // Create glyph at user's current location
@@ -184,7 +210,7 @@ export default function WebMap({ user, userProfile }) {
       return;
     }
     
-    if (userLocation.accuracy > 10) { // Only allow if accuracy is within 10 meters
+    if (userLocation.accuracy > 10) {
       alert(`GPS accuracy is too low (±${Math.round(userLocation.accuracy)}m). Please move to an open area and try again.`);
       return;
     }
@@ -193,10 +219,11 @@ export default function WebMap({ user, userProfile }) {
     setShowAddGlyph(true);
   };
 
+  // Initialize map only once
   useEffect(() => {
     console.log('Map effect running...');
     
-    if (map.current) return; // initialize map only once
+    if (map.current) return; // Initialize map only once
     
     mapboxgl.accessToken = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
     console.log('Creating map with token:', process.env.EXPO_PUBLIC_MAPBOX_TOKEN ? 'Token exists' : 'No token');
@@ -210,39 +237,52 @@ export default function WebMap({ user, userProfile }) {
 
     map.current.on('load', () => {
       console.log('Map loaded successfully');
-      getUserLocation(); // Get user location when map is ready (this will trigger glyph loading)
+      getUserLocation();
     });
 
-  }, []);
+    // Cleanup function
+    return () => {
+      if (map.current) {
+        clearAllMarkers();
+        if (userMarkerRef.current) {
+          userMarkerRef.current.remove();
+        }
+      }
+    };
+  }, []); // Empty dependency array - run only once
 
-  // Add markers when glyphs change
+  // Update markers when glyphs change (but don't clear existing ones)
   useEffect(() => {
     if (map.current && glyphs.length > 0) {
       addMarkersToMap();
     }
-  }, [glyphs]);
+  }, [glyphs]); // Only depend on glyphs array
 
   // Update user location marker when location changes
   useEffect(() => {
     updateUserLocationMarker();
   }, [userLocation]);
 
-  const handleGlyphCreated = () => {
+  const handleGlyphCreated = (newGlyph) => {
     setShowAddGlyph(false);
-    if (userLocation) {
-      loadNearbyGlyphs(userLocation.lat, userLocation.lng);
-    }
+    // Add the new glyph to the list
+    setGlyphs(prev => [...prev, newGlyph]);
+  };
+
+  const handleGlyphUpdated = (updatedGlyph) => {
+    // Update the glyph in the list
+    setGlyphs(prev => prev.map(g => g.id === updatedGlyph.id ? updatedGlyph : g));
   };
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <div ref={mapContainer} style={{ width: '100%', height: '100%' }} />
       
-      {/* Location controls - moved to left side to avoid user profile overlap */}
+      {/* Location controls */}
       <div style={{
         position: 'absolute',
         top: '10px',
-        left: '10px', // Changed from right to left
+        left: '10px',
         zIndex: 1000,
         display: 'flex',
         flexDirection: 'column',
@@ -332,12 +372,23 @@ export default function WebMap({ user, userProfile }) {
         </div>
       )}
 
+      {/* Add Glyph Modal */}
       {showAddGlyph && (
         <AddGlyph 
           coordinates={selectedCoords}
           onClose={() => setShowAddGlyph(false)}
           onGlyphCreated={handleGlyphCreated}
           user={user}
+        />
+      )}
+
+      {/* Glyph Detail Modal */}
+      {selectedGlyph && (
+        <GlyphDetailModal
+          glyph={selectedGlyph}
+          user={user}
+          onClose={() => setSelectedGlyph(null)}
+          onGlyphUpdated={handleGlyphUpdated}
         />
       )}
     </div>
