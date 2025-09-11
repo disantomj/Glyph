@@ -231,7 +231,7 @@ export class GlyphService {
     }
   }
 
-  // Get comments for a glyph
+  // Get comments for a glyph with proper usernames
   static async getGlyphComments(glyphId, limit = 50) {
     try {
       const { data, error } = await supabase
@@ -246,11 +246,31 @@ export class GlyphService {
         return [];
       }
 
-      // Add default usernames
-      return (data || []).map(comment => ({
-        ...comment,
-        users: { username: 'Explorer' }
-      }));
+      // Get usernames for each comment
+      const commentsWithUsernames = await Promise.all(
+        (data || []).map(async (comment) => {
+          let commenterUsername = 'Anonymous';
+          
+          if (comment.user_id) {
+            const { data: userData } = await supabase
+              .from('users')
+              .select('username')
+              .eq('id', comment.user_id)
+              .single();
+            
+            if (userData?.username) {
+              commenterUsername = userData.username;
+            }
+          }
+
+          return {
+            ...comment,
+            users: { username: commenterUsername }
+          };
+        })
+      );
+
+      return commentsWithUsernames;
     } catch (err) {
       console.error('Comment feature not available:', err);
       return [];
