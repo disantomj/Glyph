@@ -20,20 +20,27 @@ export class GlyphService {
   // Load all active glyphs from database
   static async loadAllGlyphs() {
     try {
+      console.log('🔍 Starting loadAllGlyphs...');
+      
       const { data, error } = await supabase
         .from('glyphs')
         .select('*')
         .eq('is_active', true);
 
+      console.log('📊 Raw Supabase response:', { data, error });
+
       if (error) {
-        console.error('Error loading glyphs:', error);
+        console.error('❌ Error loading glyphs:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
         throw error;
       }
 
-      console.log('Loaded all glyphs from database:', data?.length);
+      console.log('✅ Loaded glyphs from database:', data?.length || 0);
+      console.log('📍 Individual glyphs:', data);
+      
       return data || [];
     } catch (err) {
-      console.error('Unexpected error loading glyphs:', err);
+      console.error('💥 Unexpected error loading glyphs:', err);
       throw err;
     }
   }
@@ -41,25 +48,62 @@ export class GlyphService {
   // Load glyphs within a specific radius of user location
   static async loadNearbyGlyphs(userLat, userLng, radiusMeters = 200) {
     try {
+      console.log('🎯 Starting loadNearbyGlyphs...');
+      console.log('📍 User location:', { lat: userLat, lng: userLng });
+      console.log('📏 Search radius:', radiusMeters, 'meters');
+
       // Load all glyphs first (later optimization: server-side spatial filtering)
       const allGlyphs = await this.loadAllGlyphs();
+      
+      console.log('🗂️ All glyphs loaded, filtering by distance...');
 
-      // Filter glyphs by distance
-      const nearbyGlyphs = allGlyphs.filter(glyph => {
+      // Filter glyphs by distance with detailed logging
+      const nearbyGlyphs = allGlyphs.filter((glyph, index) => {
         const distance = this.calculateDistance(
           userLat, userLng,
           glyph.latitude, glyph.longitude
         );
-        return distance <= radiusMeters;
+        
+        const isNearby = distance <= radiusMeters;
+        
+        console.log(`📐 Glyph ${index + 1}:`, {
+          id: glyph.id,
+          category: glyph.category,
+          location: { lat: glyph.latitude, lng: glyph.longitude },
+          distance: `${Math.round(distance)}m`,
+          isNearby: isNearby,
+          text: glyph.text?.substring(0, 30) + '...'
+        });
+        
+        return isNearby;
       });
 
-      console.log('Total glyphs in database:', allGlyphs.length);
-      console.log(`Nearby glyphs (within ${radiusMeters}m):`, nearbyGlyphs.length);
-      console.log('User location:', { lat: userLat, lng: userLng });
+      console.log('📊 Summary:');
+      console.log(`  📱 Total glyphs in database: ${allGlyphs.length}`);
+      console.log(`  📍 Nearby glyphs (within ${radiusMeters}m): ${nearbyGlyphs.length}`);
+      console.log(`  🧭 User location: ${userLat.toFixed(6)}, ${userLng.toFixed(6)}`);
+      
+      if (nearbyGlyphs.length > 0) {
+        console.log('🎉 Nearby glyphs found:', nearbyGlyphs.map(g => ({
+          id: g.id,
+          category: g.category,
+          distance: Math.round(this.calculateDistance(userLat, userLng, g.latitude, g.longitude)) + 'm'
+        })));
+      } else {
+        console.log('😕 No nearby glyphs found. Closest glyphs:');
+        const distances = allGlyphs.map(glyph => ({
+          id: glyph.id,
+          category: glyph.category,
+          distance: Math.round(this.calculateDistance(userLat, userLng, glyph.latitude, glyph.longitude)),
+          location: { lat: glyph.latitude, lng: glyph.longitude }
+        })).sort((a, b) => a.distance - b.distance).slice(0, 3);
+        
+        console.log('🔍 3 closest glyphs:', distances);
+      }
       
       return nearbyGlyphs;
     } catch (err) {
-      console.error('Error loading nearby glyphs:', err);
+      console.error('💥 Error loading nearby glyphs:', err);
       throw err;
     }
   }
@@ -67,20 +111,22 @@ export class GlyphService {
   // Create a new glyph at specific coordinates
   static async createGlyph(glyphData) {
     try {
+      console.log('✨ Creating glyph:', glyphData);
+      
       const { data, error } = await supabase
         .from('glyphs')
         .insert([glyphData])
         .select(); // Return the created glyph
 
       if (error) {
-        console.error('Error creating glyph:', JSON.stringify(error, null, 2));
+        console.error('❌ Error creating glyph:', JSON.stringify(error, null, 2));
         throw error;
       }
 
-      console.log('Glyph created successfully:', data);
+      console.log('✅ Glyph created successfully:', data);
       return data[0]; // Return the created glyph
     } catch (err) {
-      console.error('Unexpected error creating glyph:', err);
+      console.error('💥 Unexpected error creating glyph:', err);
       throw err;
     }
   }

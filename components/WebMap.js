@@ -238,11 +238,11 @@ export default function WebMap({ user, userProfile }) {
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <div ref={mapContainer} style={{ width: '100%', height: '100%' }} />
       
-      {/* Location controls */}
+      {/* Location controls - moved to left side to avoid user profile overlap */}
       <div style={{
         position: 'absolute',
         top: '10px',
-        right: '10px',
+        left: '10px', // Changed from right to left
         zIndex: 1000,
         display: 'flex',
         flexDirection: 'column',
@@ -256,9 +256,12 @@ export default function WebMap({ user, userProfile }) {
             backgroundColor: '#007bff',
             color: 'white',
             border: 'none',
-            borderRadius: '4px',
+            borderRadius: '8px',
             cursor: isLoadingLocation ? 'not-allowed' : 'pointer',
-            fontSize: '14px'
+            fontSize: '14px',
+            fontWeight: '500',
+            boxShadow: '0 2px 8px rgba(0,123,255,0.3)',
+            transition: 'all 0.2s'
           }}
         >
           {isLoadingLocation ? 'Finding Location...' : '📍 Find My Location'}
@@ -272,9 +275,12 @@ export default function WebMap({ user, userProfile }) {
               backgroundColor: '#28a745',
               color: 'white',
               border: 'none',
-              borderRadius: '4px',
+              borderRadius: '8px',
               cursor: 'pointer',
-              fontSize: '14px'
+              fontSize: '14px',
+              fontWeight: '500',
+              boxShadow: '0 2px 8px rgba(40,167,69,0.3)',
+              transition: 'all 0.2s'
             }}
           >
             ✨ Create Glyph Here
@@ -287,13 +293,17 @@ export default function WebMap({ user, userProfile }) {
         <div style={{
           position: 'absolute',
           top: '10px',
-          left: '10px',
+          left: '50%',
+          transform: 'translateX(-50%)',
           backgroundColor: '#dc3545',
           color: 'white',
-          padding: '10px',
-          borderRadius: '4px',
+          padding: '10px 15px',
+          borderRadius: '8px',
           zIndex: 1000,
-          maxWidth: '300px'
+          maxWidth: '300px',
+          textAlign: 'center',
+          fontSize: '14px',
+          boxShadow: '0 2px 8px rgba(220,53,69,0.3)'
         }}>
           {locationError}
         </div>
@@ -305,15 +315,20 @@ export default function WebMap({ user, userProfile }) {
           position: 'absolute',
           bottom: '10px',
           left: '10px',
-          backgroundColor: 'rgba(255, 255, 255, 0.9)',
-          padding: '8px',
-          borderRadius: '4px',
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          padding: '8px 12px',
+          borderRadius: '8px',
           fontSize: '12px',
-          zIndex: 1000
+          zIndex: 1000,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          border: '1px solid #e1e5e9'
         }}>
-          Location: {userLocation.lat.toFixed(6)}, {userLocation.lng.toFixed(6)}
-          <br />
-          Accuracy: ±{Math.round(userLocation.accuracy)}m
+          <div style={{ fontWeight: '500', color: '#333' }}>
+            📍 {userLocation.lat.toFixed(6)}, {userLocation.lng.toFixed(6)}
+          </div>
+          <div style={{ color: '#666', marginTop: '2px' }}>
+            Accuracy: ±{Math.round(userLocation.accuracy)}m
+          </div>
         </div>
       )}
 
