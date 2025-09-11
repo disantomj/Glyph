@@ -18,48 +18,77 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    const getInitialSession = async () => {
+    let isMounted = true;
+
+    // Single initialization function that handles both initial session and auth changes
+    const initializeAuth = async () => {
       try {
+        console.log('Initializing auth...');
+        
+        // Get initial session
         const { data: { session }, error } = await supabase.auth.getSession();
+        
         if (error) {
           console.error('Error getting session:', error);
-        } else if (session?.user) {
-          console.log('Initial session found:', session.user.email);
-          setUser(session.user);
-          await fetchUserProfile(session.user.id);
-        } else {
-          console.log('No initial session found');
+        }
+
+        // Only update state if component is still mounted
+        if (isMounted) {
+          if (session?.user) {
+            console.log('Initial session found:', session.user.email);
+            setUser(session.user);
+            // Fetch profile in the background, don't block auth state
+            fetchUserProfile(session.user.id).catch(err => 
+              console.error('Profile fetch failed:', err)
+            );
+          } else {
+            console.log('No initial session found');
+            setUser(null);
+            setUserProfile(null);
+          }
+          setLoading(false);
         }
       } catch (err) {
-        console.error('Unexpected error getting session:', err);
+        console.error('Unexpected error in auth initialization:', err);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
-      setLoading(false);
     };
 
-    getInitialSession();
-
-    // Listen for auth changes
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email || 'no user');
         
+        if (!isMounted) return;
+
         if (session?.user) {
           setUser(session.user);
-          await fetchUserProfile(session.user.id);
+          // Fetch profile in the background
+          fetchUserProfile(session.user.id).catch(err => 
+            console.error('Profile fetch failed during auth change:', err)
+          );
         } else {
           setUser(null);
           setUserProfile(null);
         }
+        
+        // Always set loading to false after auth state change
         setLoading(false);
       }
     );
 
+    // Initialize auth
+    initializeAuth();
+
     return () => {
+      isMounted = false;
       subscription?.unsubscribe();
     };
   }, []);
 
+  // Separate async function for profile fetching that doesn't block auth state
   const fetchUserProfile = async (userId) => {
     try {
       console.log('Fetching user profile for ID:', userId);
@@ -72,17 +101,18 @@ export const AuthProvider = ({ children }) => {
 
       if (error && error.code === 'PGRST116') {
         console.log('Profile not found, creating one');
-        // Profile doesn't exist, create one directly
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const username = user.email?.split('@')[0] || 'Explorer';
+        
+        // Get current user to create profile
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (currentUser) {
+          const username = currentUser.email?.split('@')[0] || 'Explorer';
           
           const { data: newProfile, error: createError } = await supabase
             .from('users')
             .insert({
-              id: user.id,
+              id: currentUser.id,
               username: username,
-              email: user.email,
+              email: currentUser.email,
             })
             .select()
             .single();
