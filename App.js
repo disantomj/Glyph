@@ -7,10 +7,24 @@ import WebMap from './components/WebMap';
 import Auth from './components/Auth';
 import UserProfile from './components/UserProfile';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import PasswordResetPage from './components/PasswordResetPage';
 
 // Main app component that uses auth context
 function MainApp() {
   const { user, userProfile, loading } = useAuth();
+  const [isResetPassword, setIsResetPassword] = useState(false);
+
+  useEffect(() => {
+    // Check if URL contains reset-password
+    const currentPath = window.location.pathname + window.location.search + window.location.hash;
+    if (currentPath.includes('reset-password')) {
+      setIsResetPassword(true);
+    }
+  }, []);
+
+  if (isResetPassword) {
+    return <PasswordResetPage />;
+  }
 
   if (loading) {
     return (
