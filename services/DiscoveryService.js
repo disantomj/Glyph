@@ -120,7 +120,7 @@ export class DiscoveryService {
     try {
       const { data, error } = await supabase
         .from('glyph_discoveries')
-        .select('id, created_at, glyphs!inner(category)')
+        .select('id, discovered_at, glyphs!inner(category)')
         .eq('user_id', userId);
 
       if (error) {
@@ -139,7 +139,7 @@ export class DiscoveryService {
         categoriesDiscovered[category] = (categoriesDiscovered[category] || 0) + 1;
       });
 
-      const dates = data.map(d => new Date(d.created_at)).sort();
+      const dates = data.map(d => new Date(d.discovered_at)).sort();
 
       return {
         totalDiscoveries: data.length,
