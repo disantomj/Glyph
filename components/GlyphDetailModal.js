@@ -1,6 +1,7 @@
 // components/GlyphDetailModal.js
 import React, { useState, useEffect } from 'react';
 import { GlyphService } from '../services/GlyphService';
+import { InteractionService } from '../services/InteractionService';
 
 export default function GlyphDetailModal({ glyph, user, onClose, onGlyphUpdated }) {
   const [glyphData, setGlyphData] = useState(glyph);
@@ -34,12 +35,12 @@ export default function GlyphDetailModal({ glyph, user, onClose, onGlyphUpdated 
       
       // Load user's rating if logged in
       if (user) {
-        const rating = await GlyphService.getUserRating(glyph.id, user.id);
+        const rating = await InteractionService.getUserRating(glyph.id, user.id);
         setUserRating(rating);
       }
       
       // Load comments
-      const glyphComments = await GlyphService.getGlyphComments(glyph.id);
+      const glyphComments = await InteractionService.getGlyphComments(glyph.id);
       setComments(glyphComments);
       
     } catch (error) {
@@ -57,7 +58,7 @@ export default function GlyphDetailModal({ glyph, user, onClose, onGlyphUpdated 
 
     try {
       setIsSubmittingRating(true);
-      await GlyphService.rateGlyph(glyph.id, user.id, rating);
+      await InteractionService.rateGlyph(glyph.id, user.id, rating);
       setUserRating(rating);
       
       // Reload glyph data to get updated averages
@@ -85,7 +86,7 @@ export default function GlyphDetailModal({ glyph, user, onClose, onGlyphUpdated 
 
     try {
       setIsSubmittingComment(true);
-      const comment = await GlyphService.addComment(glyph.id, user.id, newComment);
+      const comment = await InteractionService.addComment(glyph.id, user.id, newComment);
       setComments([comment, ...comments]);
       setNewComment('');
       

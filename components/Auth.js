@@ -1,76 +1,59 @@
-// components/Auth.js
 import React, { useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { useAuth } from '../hooks/useAuth'; // Import the new hook
 
 export default function Auth({ onAuthSuccess }) {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
+
+  // Use the auth hook instead of local state
+  const {
+    loading,
+    error,
+    message,
+    signIn,
+    signUp,
+    resetPassword,
+    clearMessages,
+    validateEmail
+  } = useAuth();
 
   const handleAuth = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
-    setMessage('');
+    clearMessages();
+
+    // Basic validation
+    if (!validateEmail(email)) {
+      return;
+    }
 
     try {
       if (isSignUp) {
-        // Simple signup without immediate profile creation
-        const { data, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-        });
-
-        if (signUpError) throw signUpError;
-
-        setMessage('Account created successfully! You can now sign in.');
-        setIsSignUp(false); // Switch to sign in view
+        const { data, error } = await signUp(email, password);
+        
+        if (!error && data) {
+          setIsSignUp(false); // Switch to sign in view after successful signup
+        }
       } else {
-        // Sign in existing user
-        const { data, error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (signInError) throw signInError;
-
-        onAuthSuccess(data.user);
+        const { data, error } = await signIn(email, password);
+        
+        if (!error && data?.user) {
+          onAuthSuccess(data.user);
+        }
       }
-    } catch (error) {
-      setError(error.message);
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      console.error('Auth error:', err);
     }
   };
 
   const handlePasswordReset = async (e) => {
     e.preventDefault();
-    if (!email) {
-      setError('Please enter your email address');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-    setMessage('');
-
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-
-      if (error) throw error;
-
-      setMessage('Check your email for a password reset link!');
+    
+    const { error } = await resetPassword(email);
+    
+    if (!error) {
       setShowPasswordReset(false);
-    } catch (error) {
-      setError(error.message);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -169,7 +152,10 @@ export default function Auth({ onAuthSuccess }) {
           <div style={{ textAlign: 'center' }}>
             <button
               type="button"
-              onClick={() => setShowPasswordReset(false)}
+              onClick={() => {
+                setShowPasswordReset(false);
+                clearMessages();
+              }}
               style={{
                 background: 'none',
                 border: 'none',
@@ -299,7 +285,10 @@ export default function Auth({ onAuthSuccess }) {
         <div style={{ textAlign: 'center', marginBottom: '10px' }}>
           <button
             type="button"
-            onClick={() => setIsSignUp(!isSignUp)}
+            onClick={() => {
+              setIsSignUp(!isSignUp);
+              clearMessages();
+            }}
             style={{
               background: 'none',
               border: 'none',
@@ -317,7 +306,10 @@ export default function Auth({ onAuthSuccess }) {
           <div style={{ textAlign: 'center' }}>
             <button
               type="button"
-              onClick={() => setShowPasswordReset(true)}
+              onClick={() => {
+                setShowPasswordReset(true);
+                clearMessages();
+              }}
               style={{
                 background: 'none',
                 border: 'none',
