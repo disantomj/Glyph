@@ -237,7 +237,9 @@ export default function WebMap({ user, userProfile }) {
 
     map.current.on('load', () => {
       console.log('Map loaded successfully');
-      getUserLocation();
+      if (user) {
+        getUserLocation();
+      }
     });
 
     // Cleanup function
@@ -249,7 +251,7 @@ export default function WebMap({ user, userProfile }) {
         }
       }
     };
-  }, []); // Empty dependency array - run only once
+  }, [user]); // Empty dependency array - run only once
 
   // Update markers when glyphs change (but don't clear existing ones)
   useEffect(() => {
@@ -279,6 +281,7 @@ export default function WebMap({ user, userProfile }) {
       <div ref={mapContainer} style={{ width: '100%', height: '100%' }} />
       
       {/* Location controls */}
+      {user && (
       <div style={{
         position: 'absolute',
         top: '10px',
@@ -327,6 +330,7 @@ export default function WebMap({ user, userProfile }) {
           </button>
         )}
       </div>
+    )}
 
       {/* Location error display */}
       {locationError && (
