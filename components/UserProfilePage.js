@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { DiscoveryService } from '../services/DiscoveryService';
 import { GlyphService } from '../services/GlyphService';
+import { useStreak } from '../hooks/useStreak';
 import { getCategoryIcon, GLYPH_CATEGORIES } from '../constants/categories';
-import { COLORS, CARD_STYLES, BUTTON_STYLES, mergeStyles } from '../constants/styles';
+import { COLORS, CARD_STYLES, mergeStyles } from '../constants/styles';
+import { LocationService } from '../services/LocationService';
 import { supabase } from '../lib/supabase';
+import StreakDisplay from './StreakDisplay';
 
 export default function UserProfilePage({ user, userProfile, onClose }) {
   const [discoveryStats, setDiscoveryStats] = useState(null);
@@ -11,6 +14,9 @@ export default function UserProfilePage({ user, userProfile, onClose }) {
   const [discoveredGlyphs, setDiscoveredGlyphs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('stats');
+
+  // Use the streak hook
+  const { streakData } = useStreak(user);
 
   useEffect(() => {
     loadUserData();
@@ -30,7 +36,7 @@ export default function UserProfilePage({ user, userProfile, onClose }) {
       const discovered = await DiscoveryService.getUserDiscoveredGlyphs(user.id);
       setDiscoveredGlyphs(discovered);
 
-      // Load created glyphs (simplified query)
+      // Load created glyphs
       const { data: created } = await supabase
         .from('glyphs')
         .select('*')
@@ -177,6 +183,7 @@ export default function UserProfilePage({ user, userProfile, onClose }) {
         }}>
           {[
             { id: 'stats', label: 'Statistics', icon: '📊' },
+            { id: 'streaks', label: 'Streaks', icon: '🔥' },
             { id: 'discovered', label: 'Discovered', icon: '🔍' },
             { id: 'created', label: 'Created', icon: '✨' }
           ].map(tab => (
@@ -309,6 +316,12 @@ export default function UserProfilePage({ user, userProfile, onClose }) {
             </div>
           )}
 
+          {activeTab === 'streaks' && (
+            <div>
+              <StreakDisplay streakData={streakData} compact={false} />
+            </div>
+          )}
+
           {activeTab === 'discovered' && (
             <div>
               <div style={{ marginBottom: '15px', fontSize: '16px', color: COLORS.TEXT_SECONDARY }}>
@@ -367,7 +380,7 @@ export default function UserProfilePage({ user, userProfile, onClose }) {
                           {glyph.category}
                         </div>
                         <div style={{ fontSize: '12px', color: COLORS.TEXT_SECONDARY }}>
-                          {formatDate(glyph.discovered_at)}
+                          {formatDate(glyph.created_at)}
                         </div>
                       </div>
                     </div>

@@ -7,7 +7,8 @@ import { useLocation } from '../hooks/useLocation';
 import { useGlyphs } from '../hooks/useGlyphs';
 import { useMapbox } from '../hooks/useMapbox';
 import { getCategoryIcon } from '../constants/categories';
-import { LocationService } from '../services/LocationService';
+import { useStreak } from '../hooks/useStreak';
+import StreakDisplay from './StreakDisplay';
 import { 
   LOCATION_CONFIG, 
   ERROR_MESSAGES,
@@ -56,6 +57,8 @@ export default function WebMap({ user, userProfile }) {
     updateUserLocationMarker,
     createMarker
   } = useMapbox();
+
+  const { streakData, recordDiscovery } = useStreak(user);
 
   // Add markers to map (only add new ones, don't recreate existing)
   const addMarkersToMap = () => {
@@ -291,6 +294,17 @@ export default function WebMap({ user, userProfile }) {
           boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
         }}>
           Loading nearby glyphs...
+        </div>
+      )}
+
+      {user && streakData && (
+        <div style={{
+          position: 'absolute',
+          top: '180px',
+          right: '20px',
+          zIndex: 1000
+        }}>
+          <StreakDisplay streakData={streakData} compact={true} />
         </div>
       )}
 

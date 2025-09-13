@@ -2,6 +2,8 @@ import { useState, useRef, useCallback} from 'react';
 import { GlyphService } from '../services/GlyphService';
 import { LocationService } from '../services/LocationService';
 import { DiscoveryService } from '../services/DiscoveryService';
+import { StreakService } from '../services/StreakService';
+
 
 export const useGlyphs = () => {
   const [glyphs, setGlyphs] = useState([]);
@@ -116,6 +118,7 @@ export const useGlyphs = () => {
     if (LocationService.isUserNearGlyph(userLocation.lat, userLocation.lng, glyph, discoveryRadius)) {
       try {
         await DiscoveryService.recordGlyphDiscovery(user.id, glyph.id, userLocation.lat, userLocation.lng);
+        await StreakService.updateStreakOnDiscovery(user.id);
         console.log('Glyph discovery recorded for user:', user.id);
       } catch (error) {
         console.log('Discovery already recorded or error:', error);
