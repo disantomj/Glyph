@@ -1,9 +1,8 @@
-// components/GlyphDetailModal.js
 import React, { useState, useEffect } from 'react';
 import { GlyphService } from '../services/GlyphService';
 import { InteractionService } from '../services/InteractionService';
 
-export default function GlyphDetailModal({ glyph, user, onClose, onGlyphUpdated }) {
+export default function GlyphDetailModal({ glyph, user, onClose, onGlyphUpdated, onGlyphDeleted }) {
   const [glyphData, setGlyphData] = useState(glyph);
   const [userRating, setUserRating] = useState(null);
   const [comments, setComments] = useState([]);
@@ -11,6 +10,8 @@ export default function GlyphDetailModal({ glyph, user, onClose, onGlyphUpdated 
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Category icons mapping
   const categoryIcons = {
@@ -101,6 +102,31 @@ export default function GlyphDetailModal({ glyph, user, onClose, onGlyphUpdated 
       alert('Error adding comment. Please try again.');
     } finally {
       setIsSubmittingComment(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!user || glyphData.user_id !== user.id) return;
+
+    try {
+      setIsDeleting(true);
+      await GlyphService.deleteGlyph(glyphData.id);
+      
+      // Call onGlyphDeleted callback if provided
+      if (onGlyphDeleted) {
+        onGlyphDeleted(glyphData.id);
+      }
+      
+      // Close the modal
+      onClose();
+      
+      alert('Memory deleted successfully');
+    } catch (error) {
+      console.error('Error deleting glyph:', error);
+      alert('Failed to delete memory. Please try again.');
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -421,25 +447,84 @@ export default function GlyphDetailModal({ glyph, user, onClose, onGlyphUpdated 
           backgroundColor: '#f8f9fa',
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center'
+          alignItems: 'center',
+          gap: '10px'
         }}>
           <div style={{ fontSize: '12px', color: '#666' }}>
             📍 {glyphData.latitude.toFixed(6)}, {glyphData.longitude.toFixed(6)}
           </div>
-          <button
-            onClick={onClose}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: '#6c757d',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            Close
-          </button>
+          
+          <div style={{ display: 'flex', gap: '10px' }}>
+            {/* Delete Button - only show for memory owner */}
+            {user && glyphData.user_id === user.id && (
+              <>
+                {!showDeleteConfirm ? (
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    style={{
+                      padding: '10px 20px',
+                      backgroundColor: '#dc3545',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '14px'
+                    }}
+                  >
+                    Delete Memory
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleDelete}
+                      disabled={isDeleting}
+                      style={{
+                        padding: '10px 20px',
+                        backgroundColor: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: isDeleting ? 'not-allowed' : 'pointer',
+                        fontSize: '14px'
+                      }}
+                    >
+                      {isDeleting ? 'Deleting...' : 'Confirm Delete'}
+                    </button>
+                    <button
+                      onClick={() => setShowDeleteConfirm(false)}
+                      style={{
+                        padding: '10px 20px',
+                        backgroundColor: '#6c757d',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '14px'
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </>
+                )}
+              </>
+            )}
+            
+            {/* Close Button */}
+            <button
+              onClick={onClose}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#6c757d',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
     </div>

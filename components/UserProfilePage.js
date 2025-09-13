@@ -14,6 +14,7 @@ export default function UserProfilePage({ user, userProfile, onClose }) {
   const [discoveredGlyphs, setDiscoveredGlyphs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('stats');
+  const [deletingGlyphId, setDeletingGlyphId] = useState(null);
 
   // Use the streak hook
   const { streakData } = useStreak(user);
@@ -49,6 +50,25 @@ export default function UserProfilePage({ user, userProfile, onClose }) {
       console.error('Error loading user data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteMemory = async (glyphId) => {
+    if (window.confirm('Are you sure you want to delete this memory? This action cannot be undone.')) {
+      try {
+        setDeletingGlyphId(glyphId);
+        await GlyphService.deleteGlyph(glyphId);
+        
+        // Remove from local state
+        setCreatedGlyphs(prev => prev.filter(g => g.id !== glyphId));
+        
+        alert('Memory deleted successfully');
+      } catch (error) {
+        console.error('Error deleting memory:', error);
+        alert('Failed to delete memory. Please try again.');
+      } finally {
+        setDeletingGlyphId(null);
+      }
     }
   };
 
@@ -236,7 +256,7 @@ export default function UserProfilePage({ user, userProfile, onClose }) {
                     {createdGlyphs.length}
                   </div>
                   <div style={{ fontSize: '14px', color: COLORS.TEXT_SECONDARY }}>
-                    Glyphs Created
+                    Memories Created
                   </div>
                 </div>
 
@@ -361,16 +381,78 @@ export default function UserProfilePage({ user, userProfile, onClose }) {
 
           {activeTab === 'created' && (
             <div>
-              <div style={{ marginBottom: '15px', fontSize: '16px', color: COLORS.TEXT_SECONDARY }}>
-                {createdGlyphs.length} glyphs created
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                marginBottom: '15px' 
+              }}>
+                <div style={{ fontSize: '16px', color: COLORS.TEXT_SECONDARY }}>
+                  {createdGlyphs.length} memories created
+                </div>
+                {createdGlyphs.length > 0 && (
+                  <div style={{ fontSize: '12px', color: COLORS.TEXT_MUTED }}>
+                    Click memories to manage them
+                  </div>
+                )}
               </div>
+              
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
                 gap: '15px'
               }}>
                 {createdGlyphs.map(glyph => (
-                  <div key={glyph.id} style={mergeStyles(CARD_STYLES.base, { padding: '15px' })}>
+                  <div 
+                    key={glyph.id} 
+                    style={mergeStyles(CARD_STYLES.base, { 
+                      padding: '15px',
+                      position: 'relative',
+                      transition: 'transform 0.2s, box-shadow 0.2s',
+                      cursor: 'pointer'
+                    })}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                    }}
+                  >
+                    {/* Delete button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteMemory(glyph.id);
+                      }}
+                      disabled={deletingGlyphId === glyph.id}
+                      style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        background: 'rgba(220, 53, 69, 0.8)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: '24px',
+                        height: '24px',
+                        cursor: deletingGlyphId === glyph.id ? 'not-allowed' : 'pointer',
+                        fontSize: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: 0.7,
+                        transition: 'opacity 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.target.style.opacity = '1'}
+                      onMouseLeave={(e) => e.target.style.opacity = '0.7'}
+                      title={deletingGlyphId === glyph.id ? 'Deleting...' : 'Delete memory'}
+                    >
+                      {deletingGlyphId === glyph.id ? '⏳' : '🗑'}
+                    </button>
+
+                    {/* Memory content */}
                     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
                       <span style={{ fontSize: '20px', marginRight: '10px' }}>
                         {getCategoryIcon(glyph.category)}
@@ -384,6 +466,24 @@ export default function UserProfilePage({ user, userProfile, onClose }) {
                         </div>
                       </div>
                     </div>
+                    
+                    {/* Photo if exists */}
+                    {glyph.photo_url && (
+                      <div style={{ marginBottom: '10px' }}>
+                        <img 
+                          src={glyph.photo_url} 
+                          alt="Memory photo"
+                          style={{
+                            width: '100%',
+                            height: '120px',
+                            objectFit: 'cover',
+                            borderRadius: '6px',
+                            border: '1px solid #e1e5e9'
+                          }}
+                        />
+                      </div>
+                    )}
+                    
                     <div style={{ fontSize: '14px', lineHeight: '1.4', marginBottom: '10px' }}>
                       {glyph.text?.substring(0, 100)}{glyph.text?.length > 100 ? '...' : ''}
                     </div>
@@ -399,6 +499,20 @@ export default function UserProfilePage({ user, userProfile, onClose }) {
                   </div>
                 ))}
               </div>
+              
+              {createdGlyphs.length === 0 && (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '60px 20px',
+                  color: COLORS.TEXT_MUTED
+                }}>
+                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>💭</div>
+                  <div style={{ fontSize: '16px', marginBottom: '8px' }}>No memories yet</div>
+                  <div style={{ fontSize: '14px' }}>
+                    Start creating memories by exploring and saving special moments!
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -41,6 +41,7 @@ export default function WebMap({ user, userProfile }) {
     loadPersonalMemories,
     addGlyph,
     updateGlyph,
+    removeGlyph,
     openAddGlyphModal,
     closeAddGlyphModal,
     openGlyphDetail,
@@ -50,7 +51,8 @@ export default function WebMap({ user, userProfile }) {
     markGlyphAsRendered,
     addMarkerRef,
     handleGlyphDiscovery,
-    updateMemoryFilters
+    updateMemoryFilters,
+    deleteGlyph
   } = useGlyphs();
 
   // Use the mapbox hook
@@ -197,6 +199,13 @@ export default function WebMap({ user, userProfile }) {
   useEffect(() => {
     updateUserLocationMarker(userLocation);
   }, [userLocation, updateUserLocationMarker]);
+
+  // Clear markers when mode changes
+  useEffect(() => {
+    if (user) {
+      clearAllMarkers();
+    }
+  }, [currentMode, user]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
@@ -388,6 +397,12 @@ export default function WebMap({ user, userProfile }) {
           user={user}
           onClose={closeGlyphDetail}
           onGlyphUpdated={updateGlyph}
+          onGlyphDeleted={(glyphId) => {
+            // Remove the glyph from the map immediately
+            removeGlyph(glyphId);
+            // Close the detail modal since the glyph is now deleted
+            closeGlyphDetail();
+          }}
         />
       )}
     </div>

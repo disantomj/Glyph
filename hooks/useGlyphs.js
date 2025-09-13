@@ -112,6 +112,22 @@ export const useGlyphs = () => {
     }
   }, [memoryFilters, getFilteredPersonalGlyphs]);
 
+  // Delete a glyph (soft delete - sets is_active to false)
+  const deleteGlyph = useCallback(async (glyphId) => {
+    try {
+      await GlyphService.deleteGlyph(glyphId);
+      
+      // Remove from local state immediately for better UX
+      removeGlyph(glyphId);
+      
+      console.log('Glyph deleted successfully:', glyphId);
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting glyph:', error);
+      return { success: false, error: error.message };
+    }
+  }, []);
+
   // Add a new glyph to the list
   const addGlyph = (newGlyph) => {
     setGlyphs(prev => [...prev, newGlyph]);
@@ -188,6 +204,13 @@ export const useGlyphs = () => {
       return distance <= maxDistance;
     });
   };
+
+  // Clear markers when switching modes
+  const clearMarkersForModeSwitch = useCallback(() => {
+    clearAllMarkers();
+    // Also reset the rendered tracking
+    glyphsRenderedRef.current.clear();
+  }, []);
 
   // Record glyph discovery if user is close enough
   const handleGlyphDiscovery = async (user, userLocation, glyph, discoveryRadius = 50) => {
@@ -278,6 +301,7 @@ export const useGlyphs = () => {
     resetGlyphData,
     handleGlyphDiscovery,
     updateMemoryFilters,
+    deleteGlyph,
     
     // Map marker management
     clearAllMarkers,

@@ -62,7 +62,7 @@ export default function MemoryFilters({ onFilterChange, memoryCount = 0 }) {
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <span>📋</span>
-        <span>{memoryCount} memories</span>
+        <span>{memoryCount} Memories</span>
         <span style={{ 
           fontSize: '12px', 
           color: COLORS.TEXT_MUTED,
