@@ -2,12 +2,15 @@ import { useEffect } from 'react';
 import mapboxgl from 'mapbox-gl';
 import AddGlyph from './AddGlyph';
 import GlyphDetailModal from './GlyphDetailModal';
+import ModeSwitcher from './ModeSwitcher';
+import MemoryFilters from './MemoryFilters';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useLocation } from '../hooks/useLocation';
 import { useGlyphs } from '../hooks/useGlyphs';
 import { useMapbox } from '../hooks/useMapbox';
-import { getCategoryIcon } from '../constants/categories';
 import { useStreak } from '../hooks/useStreak';
+import { useAppMode } from '../hooks/useAppMode';
+import { getCategoryIcon } from '../constants/categories';
 import StreakDisplay from './StreakDisplay';
 import { 
   LOCATION_CONFIG, 
@@ -35,6 +38,7 @@ export default function WebMap({ user, userProfile }) {
     isLoadingGlyphs,
     glyphError,
     loadNearbyGlyphs,
+    loadPersonalMemories,
     addGlyph,
     updateGlyph,
     openAddGlyphModal,
@@ -45,7 +49,8 @@ export default function WebMap({ user, userProfile }) {
     isGlyphRendered,
     markGlyphAsRendered,
     addMarkerRef,
-    handleGlyphDiscovery
+    handleGlyphDiscovery,
+    updateMemoryFilters
   } = useGlyphs();
 
   // Use the mapbox hook
@@ -58,7 +63,11 @@ export default function WebMap({ user, userProfile }) {
     createMarker
   } = useMapbox();
 
+  // Use the streak hook
   const { streakData, recordDiscovery } = useStreak(user);
+
+  // Use the app mode hook
+  const { currentMode, switchMode, isPersonalMode, isExploreMode } = useAppMode('personal');
 
   // Add markers to map (only add new ones, don't recreate existing)
   const addMarkersToMap = () => {
@@ -114,10 +123,12 @@ export default function WebMap({ user, userProfile }) {
         e.stopPropagation();
         e.preventDefault();
         
-        // Handle glyph discovery using the hook's method
-        await handleGlyphDiscovery(user, userLocation, glyph);
+        // Only handle discovery in explore mode (not for personal memories)
+        if (isExploreMode) {
+          await handleGlyphDiscovery(user, userLocation, glyph);
+        }
         
-        // Open detailed modal using the hook's method
+        // Open detailed modal
         openGlyphDetail(glyph);
       });
 
@@ -159,15 +170,21 @@ export default function WebMap({ user, userProfile }) {
     initializeMap(handleMapLoad);
   }, [user, initializeMap]);
 
-  // Load glyphs when user location is obtained
+  // Load glyphs when user location is obtained or mode changes
   useEffect(() => {
     if (userLocation) {
-      loadNearbyGlyphs(userLocation.lat, userLocation.lng, 200);
+      if (isPersonalMode && user) {
+        // Load personal memories
+        loadPersonalMemories(user.id, 200);
+      } else if (isExploreMode) {
+        // Load nearby glyphs from others
+        loadNearbyGlyphs(userLocation.lat, userLocation.lng, 200);
+      }
       
       // Center map on user location using the hook's method
       centerMap(userLocation.lng, userLocation.lat, 16);
     }
-  }, [userLocation]);
+  }, [userLocation, currentMode, user]);
 
   // Update markers when glyphs change
   useEffect(() => {
@@ -184,6 +201,22 @@ export default function WebMap({ user, userProfile }) {
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <div ref={mapContainer} style={{ width: '100%', height: '100%' }} />
+      
+      {/* Mode Switcher - only show when user is logged in */}
+      {user && (
+        <ModeSwitcher 
+          currentMode={currentMode} 
+          onModeChange={switchMode} 
+        />
+      )}
+
+      {/* Memory Filters - only show in personal mode */}
+      {user && isPersonalMode && (
+        <MemoryFilters 
+          onFilterChange={updateMemoryFilters}
+          memoryCount={glyphs.length}
+        />
+      )}
       
       {/* Location controls */}
       {user && (
@@ -231,7 +264,7 @@ export default function WebMap({ user, userProfile }) {
               transition: 'all 0.2s'
             }}
           >
-            ✨ Create Glyph Here
+            {isPersonalMode ? '💭 Save Memory Here' : '✨ Create Glyph Here'}
           </button>
         )}
       </div>
@@ -293,10 +326,11 @@ export default function WebMap({ user, userProfile }) {
           fontSize: '14px',
           boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
         }}>
-          Loading nearby glyphs...
+          {isPersonalMode ? 'Loading memories...' : 'Loading nearby glyphs...'}
         </div>
       )}
 
+      {/* Streak Display */}
       {user && streakData && (
         <div style={{
           position: 'absolute',
@@ -328,6 +362,11 @@ export default function WebMap({ user, userProfile }) {
           <div style={{ color: '#666', marginTop: '2px' }}>
             Accuracy: ±{Math.round(userLocation.accuracy)}m
           </div>
+          {user && (
+            <div style={{ color: '#666', marginTop: '2px', fontSize: '11px' }}>
+              {isPersonalMode ? `${glyphs.length} memories nearby` : `${glyphs.length} discoveries nearby`}
+            </div>
+          )}
         </div>
       )}
 
@@ -338,6 +377,7 @@ export default function WebMap({ user, userProfile }) {
           onClose={closeAddGlyphModal}
           onGlyphCreated={addGlyph}
           user={user}
+          isMemoryMode={isPersonalMode}
         />
       )}
 
