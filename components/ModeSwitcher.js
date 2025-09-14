@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
-import { COLORS } from '../constants/styles';
+import {
+  COLORS,
+  DESIGN_TOKENS,
+  TEXT_STYLES,
+  CARD_STYLES,
+  APP_STYLES,
+  mergeStyles
+} from '../constants/styles';
 
 export default function ModeSwitcher({ currentMode, onModeChange }) {
   const [isAnimating, setIsAnimating] = useState(false);
@@ -10,14 +17,14 @@ export default function ModeSwitcher({ currentMode, onModeChange }) {
       label: 'My Memories', 
       icon: '💭',
       description: 'Your saved memories and moments',
-      color: '#667eea'
+      gradient: DESIGN_TOKENS.palette.accent.purple.gradient
     },
     { 
       id: 'explore', 
       label: 'Explore', 
       icon: '🌍',
       description: 'Discover experiences from others',
-      color: '#f093fb'
+      gradient: DESIGN_TOKENS.palette.accent.pink.gradient
     }
   ];
 
@@ -38,41 +45,36 @@ export default function ModeSwitcher({ currentMode, onModeChange }) {
   return (
     <div style={{
       position: 'absolute',
-      top: '20px',
+      top: DESIGN_TOKENS.spacing[5],
       left: '50%',
       transform: 'translateX(-50%)',
-      zIndex: 1000,
+      zIndex: DESIGN_TOKENS.zIndex.overlay,
     }}>
       {/* Main switcher container */}
-      <div style={{
+      <div style={mergeStyles(CARD_STYLES.glass, {
         display: 'flex',
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        borderRadius: '16px',
-        padding: '6px',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-        border: '1px solid rgba(255, 255, 255, 0.8)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
+        padding: DESIGN_TOKENS.spacing[1],
         position: 'relative',
         overflow: 'hidden'
-      }}>
+      })}>
         {/* Animated background slider */}
         <div
           style={{
             position: 'absolute',
-            top: '6px',
-            left: currentMode === 'personal' ? '6px' : 'calc(50% + 3px)',
+            top: DESIGN_TOKENS.spacing[1],
+            left: currentMode === 'personal' ? DESIGN_TOKENS.spacing[1] : 'calc(50% + 3px)',
             width: 'calc(50% - 6px)',
-            height: 'calc(100% - 12px)',
-            background: `linear-gradient(135deg, ${currentModeData?.color}22 0%, ${currentModeData?.color}11 100%)`,
-            borderRadius: '12px',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            border: `1px solid ${currentModeData?.color}33`,
-            zIndex: 0
+            height: `calc(100% - ${DESIGN_TOKENS.spacing[3]})`,
+            background: currentModeData?.gradient,
+            borderRadius: DESIGN_TOKENS.radius.lg,
+            transition: `all ${DESIGN_TOKENS.motion.durations.normal} ${DESIGN_TOKENS.motion.easings.default}`,
+            border: `1px solid ${COLORS.primary}33`,
+            zIndex: 0,
+            boxShadow: DESIGN_TOKENS.shadows.md
           }}
         />
 
-        {modes.map((mode, index) => {
+        {modes.map((mode) => {
           const isActive = currentMode === mode.id;
           
           return (
@@ -83,32 +85,33 @@ export default function ModeSwitcher({ currentMode, onModeChange }) {
               style={{
                 position: 'relative',
                 zIndex: 1,
-                padding: '12px 20px',
+                padding: `${DESIGN_TOKENS.spacing[3]} ${DESIGN_TOKENS.spacing[5]}`,
                 border: 'none',
-                borderRadius: '12px',
+                borderRadius: DESIGN_TOKENS.radius.lg,
                 cursor: isAnimating ? 'not-allowed' : 'pointer',
-                fontSize: '14px',
-                fontWeight: isActive ? '600' : '500',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                fontSize: DESIGN_TOKENS.typography.sizes.sm,
+                fontWeight: isActive ? DESIGN_TOKENS.typography.weights.semibold : DESIGN_TOKENS.typography.weights.medium,
+                transition: `all ${DESIGN_TOKENS.motion.durations.normal} ${DESIGN_TOKENS.motion.easings.default}`,
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
+                gap: DESIGN_TOKENS.spacing[2],
                 minWidth: '140px',
                 justifyContent: 'center',
                 backgroundColor: 'transparent',
-                color: isActive ? mode.color : COLORS.TEXT_SECONDARY,
+                color: isActive ? COLORS.textInverse : COLORS.textSecondary,
                 transform: isActive ? 'scale(1.02)' : 'scale(1)',
-                opacity: isAnimating && !isActive ? 0.5 : 1
+                opacity: isAnimating && !isActive ? 0.5 : 1,
+                fontFamily: DESIGN_TOKENS.typography.fonts.primary
               }}
               onMouseEnter={(e) => {
                 if (!isActive && !isAnimating) {
-                  e.target.style.color = mode.color;
+                  e.target.style.color = COLORS.primary;
                   e.target.style.transform = 'scale(1.02)';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isActive) {
-                  e.target.style.color = COLORS.TEXT_SECONDARY;
+                  e.target.style.color = COLORS.textSecondary;
                   e.target.style.transform = 'scale(1)';
                 }
               }}
@@ -116,15 +119,15 @@ export default function ModeSwitcher({ currentMode, onModeChange }) {
             >
               <span 
                 style={{ 
-                  fontSize: '18px',
-                  transition: 'transform 0.2s ease',
+                  fontSize: DESIGN_TOKENS.typography.sizes.lg,
+                  transition: `transform ${DESIGN_TOKENS.motion.durations.fast} ease`,
                   transform: isActive ? 'scale(1.1)' : 'scale(1)'
                 }}
               >
                 {mode.icon}
               </span>
               <span style={{ 
-                transition: 'opacity 0.2s ease',
+                transition: `opacity ${DESIGN_TOKENS.motion.durations.fast} ease`,
                 opacity: isAnimating && !isActive ? 0.7 : 1
               }}>
                 {mode.label}
@@ -135,29 +138,27 @@ export default function ModeSwitcher({ currentMode, onModeChange }) {
       </div>
 
       {/* Subtle description text below */}
-      <div style={{
+      <div style={mergeStyles(TEXT_STYLES.caption, {
         textAlign: 'center',
-        marginTop: '8px',
-        fontSize: '12px',
-        color: COLORS.TEXT_MUTED,
+        marginTop: DESIGN_TOKENS.spacing[2],
         opacity: 0.8,
-        transition: 'opacity 0.3s ease',
-        fontWeight: '400'
-      }}>
+        transition: `opacity ${DESIGN_TOKENS.motion.durations.normal} ease`,
+        fontWeight: DESIGN_TOKENS.typography.weights.normal
+      })}>
         {currentModeData?.description}
       </div>
 
-      {/* Optional: Activity indicator */}
+      {/* Activity indicator */}
       {isAnimating && (
         <div style={{
           position: 'absolute',
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: '20px',
-          height: '20px',
-          borderRadius: '50%',
-          background: `conic-gradient(from 0deg, ${currentModeData?.color}, transparent)`,
+          width: DESIGN_TOKENS.spacing[5],
+          height: DESIGN_TOKENS.spacing[5],
+          borderRadius: DESIGN_TOKENS.radius.full,
+          background: `conic-gradient(from 0deg, ${COLORS.primary}, transparent)`,
           animation: 'spin 1s linear infinite',
           zIndex: 10
         }}>

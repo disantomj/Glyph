@@ -3,10 +3,19 @@ import { DiscoveryService } from '../services/DiscoveryService';
 import { GlyphService } from '../services/GlyphService';
 import { useStreak } from '../hooks/useStreak';
 import { getCategoryIcon, GLYPH_CATEGORIES } from '../constants/categories';
-import { COLORS, CARD_STYLES, mergeStyles } from '../constants/styles';
 import { LocationService } from '../services/LocationService';
 import { supabase } from '../lib/supabase';
 import StreakDisplay from './StreakDisplay';
+import {
+  COLORS,
+  BUTTON_STYLES,
+  CARD_STYLES,
+  TEXT_STYLES,
+  MODAL_STYLES,
+  DESIGN_TOKENS,
+  LAYOUT,
+  mergeStyles
+} from '../constants/styles';
 
 export default function UserProfilePage({ user, userProfile, onClose }) {
   const [discoveryStats, setDiscoveryStats] = useState(null);
@@ -74,9 +83,9 @@ export default function UserProfilePage({ user, userProfile, onClose }) {
 
   const getBadgeForCategory = (category) => {
     const count = discoveryStats?.categoriesDiscovered[category] || 0;
-    if (count >= 10) return { level: 'Gold', color: '#ffd700' };
-    if (count >= 5) return { level: 'Silver', color: '#c0c0c0' };
-    if (count >= 1) return { level: 'Bronze', color: '#cd7f32' };
+    if (count >= 10) return { level: 'Gold', color: COLORS.warning, glow: `0 0 12px ${COLORS.warning}40` };
+    if (count >= 5) return { level: 'Silver', color: COLORS.textMuted, glow: `0 0 8px ${COLORS.textMuted}30` };
+    if (count >= 1) return { level: 'Bronze', color: '#cd7f32', glow: '0 0 6px rgba(205, 127, 50, 0.4)' };
     return null;
   };
 
@@ -89,34 +98,56 @@ export default function UserProfilePage({ user, userProfile, onClose }) {
   };
 
   const getExplorerRank = (totalDiscoveries) => {
-    if (totalDiscoveries >= 50) return { title: 'Master Explorer', icon: '🏆' };
-    if (totalDiscoveries >= 20) return { title: 'Expert Explorer', icon: '🥇' };
-    if (totalDiscoveries >= 10) return { title: 'Skilled Explorer', icon: '🥈' };
-    if (totalDiscoveries >= 5) return { title: 'Novice Explorer', icon: '🥉' };
-    return { title: 'New Explorer', icon: '🌟' };
+    if (totalDiscoveries >= 50) return { 
+      title: 'Master Explorer', 
+      icon: '🏆', 
+      color: COLORS.warning,
+      gradient: `linear-gradient(135deg, ${COLORS.warning} 0%, #f59e0b 100%)`
+    };
+    if (totalDiscoveries >= 20) return { 
+      title: 'Expert Explorer', 
+      icon: '🥇', 
+      color: COLORS.warning,
+      gradient: `linear-gradient(135deg, ${COLORS.warning} 0%, ${COLORS.primary} 100%)`
+    };
+    if (totalDiscoveries >= 10) return { 
+      title: 'Skilled Explorer', 
+      icon: '🥈', 
+      color: COLORS.textMuted,
+      gradient: `linear-gradient(135deg, ${COLORS.textMuted} 0%, ${COLORS.primary} 100%)`
+    };
+    if (totalDiscoveries >= 5) return { 
+      title: 'Novice Explorer', 
+      icon: '🥉', 
+      color: '#cd7f32',
+      gradient: `linear-gradient(135deg, #cd7f32 0%, ${COLORS.primary} 100%)`
+    };
+    return { 
+      title: 'New Explorer', 
+      icon: '🌟', 
+      color: COLORS.primary,
+      gradient: `linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.secondary} 100%)`
+    };
   };
 
   if (loading) {
     return (
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        zIndex: 2000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        <div style={{
-          background: 'white',
-          padding: '30px',
-          borderRadius: '12px',
+      <div style={MODAL_STYLES.overlay}>
+        <div style={mergeStyles(CARD_STYLES.elevated, {
+          padding: DESIGN_TOKENS.spacing[8],
           textAlign: 'center'
-        }}>
-          Loading profile...
+        })}>
+          <div style={{
+            fontSize: DESIGN_TOKENS.typography.sizes['2xl'],
+            marginBottom: DESIGN_TOKENS.spacing[4]
+          }}>
+            🔍
+          </div>
+          <div style={mergeStyles(TEXT_STYLES.body, {
+            color: COLORS.textSecondary
+          })}>
+            Loading profile...
+          </div>
         </div>
       </div>
     );
@@ -124,71 +155,94 @@ export default function UserProfilePage({ user, userProfile, onClose }) {
 
   const explorerRank = getExplorerRank(discoveryStats?.totalDiscoveries || 0);
 
+  const tabs = [
+    { id: 'stats', label: 'Statistics', icon: '📊' },
+    { id: 'streaks', label: 'Streaks', icon: '🔥' },
+    { id: 'discovered', label: 'Discovered', icon: '🔍', count: discoveredGlyphs.length },
+    { id: 'created', label: 'Created', icon: '✨', count: createdGlyphs.length }
+  ];
+
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      zIndex: 2000,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '20px'
-    }}>
-      <div style={{
-        background: 'white',
-        borderRadius: '16px',
-        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
-        maxWidth: '800px',
-        width: '100%',
-        maxHeight: '90vh',
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column'
-      }}>
-        {/* Header */}
+    <div style={MODAL_STYLES.overlay}>
+      <div style={mergeStyles(MODAL_STYLES.content, {
+        maxWidth: '900px',
+        width: '95%'
+      })}>
+        {/* Header with Gradient Background */}
         <div style={{
-          padding: '25px',
-          borderBottom: `1px solid ${COLORS.BORDER_LIGHT}`,
+          padding: DESIGN_TOKENS.spacing[6],
+          borderBottom: `1px solid ${COLORS.borderLight}`,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white'
+          background: explorerRank.gradient,
+          position: 'relative',
+          overflow: 'hidden'
         }}>
-          <div>
-            <h2 style={{ 
-              margin: '0 0 5px 0', 
-              fontSize: '24px',
+          {/* Background decoration */}
+          <div style={{
+            position: 'absolute',
+            top: '-50%',
+            right: '-20%',
+            width: '40%',
+            height: '200%',
+            background: `radial-gradient(circle, ${COLORS.textInverse}15 0%, transparent 70%)`,
+            transform: 'rotate(15deg)'
+          }} />
+          
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <h2 style={mergeStyles(TEXT_STYLES.h2, {
+              margin: `0 0 ${DESIGN_TOKENS.spacing[1]} 0`,
               display: 'flex',
               alignItems: 'center',
-              gap: '10px'
-            }}>
-              {explorerRank.icon} {userProfile?.username || user.email}
+              gap: DESIGN_TOKENS.spacing[2],
+              color: COLORS.textInverse,
+              textShadow: '0 2px 8px rgba(0,0,0,0.3)'
+            })}>
+              <span style={{
+                fontSize: DESIGN_TOKENS.typography.sizes['2xl'],
+                filter: 'drop-shadow(0 0 8px rgba(0,0,0,0.3))'
+              }}>
+                {explorerRank.icon}
+              </span>
+              {userProfile?.username || user.email}
             </h2>
-            <p style={{ 
-              margin: 0, 
-              fontSize: '16px',
-              opacity: 0.9
-            }}>
+            <p style={mergeStyles(TEXT_STYLES.body, {
+              margin: 0,
+              color: `${COLORS.textInverse}CC`,
+              fontWeight: DESIGN_TOKENS.typography.weights.medium
+            })}>
               {explorerRank.title}
             </p>
           </div>
+          
           <button
             onClick={onClose}
             style={{
+              position: 'relative',
+              zIndex: 1,
               background: 'rgba(255,255,255,0.2)',
               border: 'none',
-              fontSize: '24px',
+              fontSize: DESIGN_TOKENS.typography.sizes['2xl'],
               cursor: 'pointer',
-              color: 'white',
-              padding: '5px',
-              borderRadius: '50%',
+              color: COLORS.textInverse,
+              padding: DESIGN_TOKENS.spacing[1],
+              borderRadius: DESIGN_TOKENS.radius.full,
               width: '40px',
-              height: '40px'
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: `all ${DESIGN_TOKENS.motion.durations.fast} ease`,
+              backdropFilter: 'blur(8px)'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = 'rgba(255,255,255,0.3)';
+              e.target.style.transform = 'scale(1.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'rgba(255,255,255,0.2)';
+              e.target.style.transform = 'scale(1)';
             }}
           >
             ✕
@@ -198,110 +252,206 @@ export default function UserProfilePage({ user, userProfile, onClose }) {
         {/* Tab Navigation */}
         <div style={{
           display: 'flex',
-          borderBottom: `1px solid ${COLORS.BORDER_LIGHT}`,
-          backgroundColor: COLORS.BG_LIGHT
+          borderBottom: `1px solid ${COLORS.borderLight}`,
+          backgroundColor: COLORS.bgSecondary,
+          overflow: 'auto'
         }}>
-          {[
-            { id: 'stats', label: 'Statistics', icon: '📊' },
-            { id: 'streaks', label: 'Streaks', icon: '🔥' },
-            { id: 'discovered', label: 'Discovered', icon: '🔍' },
-            { id: 'created', label: 'Created', icon: '✨' }
-          ].map(tab => (
+          {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               style={{
-                flex: 1,
-                padding: '15px',
+                flex: '1 0 auto',
+                padding: DESIGN_TOKENS.spacing[4],
                 border: 'none',
-                backgroundColor: activeTab === tab.id ? 'white' : 'transparent',
-                borderBottom: activeTab === tab.id ? `3px solid ${COLORS.PRIMARY}` : '3px solid transparent',
+                backgroundColor: activeTab === tab.id ? COLORS.bgPrimary : 'transparent',
+                borderBottom: activeTab === tab.id ? `3px solid ${COLORS.primary}` : '3px solid transparent',
                 cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: activeTab === tab.id ? '600' : 'normal',
-                color: activeTab === tab.id ? COLORS.PRIMARY : COLORS.TEXT_SECONDARY
+                fontSize: DESIGN_TOKENS.typography.sizes.sm,
+                fontWeight: activeTab === tab.id ? DESIGN_TOKENS.typography.weights.semibold : DESIGN_TOKENS.typography.weights.normal,
+                color: activeTab === tab.id ? COLORS.primary : COLORS.textSecondary,
+                transition: `all ${DESIGN_TOKENS.motion.durations.fast} ease`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: DESIGN_TOKENS.spacing[1],
+                minWidth: '120px'
+              }}
+              onMouseEnter={(e) => {
+                if (activeTab !== tab.id) {
+                  e.target.style.backgroundColor = `${COLORS.primary}10`;
+                  e.target.style.color = COLORS.primary;
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeTab !== tab.id) {
+                  e.target.style.backgroundColor = 'transparent';
+                  e.target.style.color = COLORS.textSecondary;
+                }
               }}
             >
-              {tab.icon} {tab.label}
+              <span style={{ fontSize: DESIGN_TOKENS.typography.sizes.lg }}>
+                {tab.icon}
+              </span>
+              <span>{tab.label}</span>
+              {tab.count !== undefined && (
+                <span style={mergeStyles(CARD_STYLES.base, {
+                  backgroundColor: activeTab === tab.id ? COLORS.primary : COLORS.bgMuted,
+                  color: activeTab === tab.id ? COLORS.textInverse : COLORS.textMuted,
+                  padding: `${DESIGN_TOKENS.spacing[0]} ${DESIGN_TOKENS.spacing[1]}`,
+                  borderRadius: DESIGN_TOKENS.radius.full,
+                  fontSize: DESIGN_TOKENS.typography.sizes.xs,
+                  fontWeight: DESIGN_TOKENS.typography.weights.medium,
+                  minWidth: '20px',
+                  textAlign: 'center'
+                })}>
+                  {tab.count}
+                </span>
+              )}
             </button>
           ))}
         </div>
 
-        {/* Content */}
+        {/* Content Area */}
         <div style={{
           flex: 1,
           overflow: 'auto',
-          padding: '25px'
+          padding: DESIGN_TOKENS.spacing[6]
         }}>
           {activeTab === 'stats' && (
             <div>
-              {/* Overview Stats */}
+              {/* Overview Stats Grid */}
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '15px',
-                marginBottom: '25px'
+                gap: DESIGN_TOKENS.spacing[4],
+                marginBottom: DESIGN_TOKENS.spacing[6]
               }}>
-                <div style={mergeStyles(CARD_STYLES.elevated, { textAlign: 'center' })}>
-                  <div style={{ fontSize: '32px', color: COLORS.PRIMARY, marginBottom: '10px' }}>
+                <div style={mergeStyles(CARD_STYLES.elevated, {
+                  textAlign: 'center',
+                  padding: DESIGN_TOKENS.spacing[5],
+                  background: `linear-gradient(135deg, ${COLORS.primary}15 0%, ${COLORS.primary}05 100%)`
+                })}>
+                  <div style={mergeStyles(TEXT_STYLES.h1, {
+                    fontSize: DESIGN_TOKENS.typography.sizes['4xl'],
+                    color: COLORS.primary,
+                    marginBottom: DESIGN_TOKENS.spacing[2],
+                    textShadow: `0 0 20px ${COLORS.primary}30`
+                  })}>
                     {discoveryStats?.totalDiscoveries || 0}
                   </div>
-                  <div style={{ fontSize: '14px', color: COLORS.TEXT_SECONDARY }}>
+                  <div style={mergeStyles(TEXT_STYLES.caption, {
+                    color: COLORS.textSecondary,
+                    fontWeight: DESIGN_TOKENS.typography.weights.medium,
+                    textTransform: 'uppercase',
+                    letterSpacing: DESIGN_TOKENS.typography.letterSpacing.wide
+                  })}>
                     Total Discoveries
                   </div>
                 </div>
                 
-                <div style={mergeStyles(CARD_STYLES.elevated, { textAlign: 'center' })}>
-                  <div style={{ fontSize: '32px', color: COLORS.SUCCESS, marginBottom: '10px' }}>
+                <div style={mergeStyles(CARD_STYLES.elevated, {
+                  textAlign: 'center',
+                  padding: DESIGN_TOKENS.spacing[5],
+                  background: `linear-gradient(135deg, ${COLORS.success}15 0%, ${COLORS.success}05 100%)`
+                })}>
+                  <div style={mergeStyles(TEXT_STYLES.h1, {
+                    fontSize: DESIGN_TOKENS.typography.sizes['4xl'],
+                    color: COLORS.success,
+                    marginBottom: DESIGN_TOKENS.spacing[2],
+                    textShadow: `0 0 20px ${COLORS.success}30`
+                  })}>
                     {createdGlyphs.length}
                   </div>
-                  <div style={{ fontSize: '14px', color: COLORS.TEXT_SECONDARY }}>
+                  <div style={mergeStyles(TEXT_STYLES.caption, {
+                    color: COLORS.textSecondary,
+                    fontWeight: DESIGN_TOKENS.typography.weights.medium,
+                    textTransform: 'uppercase',
+                    letterSpacing: DESIGN_TOKENS.typography.letterSpacing.wide
+                  })}>
                     Memories Created
                   </div>
                 </div>
 
-                <div style={mergeStyles(CARD_STYLES.elevated, { textAlign: 'center' })}>
-                  <div style={{ fontSize: '32px', color: COLORS.WARNING, marginBottom: '10px' }}>
+                <div style={mergeStyles(CARD_STYLES.elevated, {
+                  textAlign: 'center',
+                  padding: DESIGN_TOKENS.spacing[5],
+                  background: `linear-gradient(135deg, ${COLORS.warning}15 0%, ${COLORS.warning}05 100%)`
+                })}>
+                  <div style={mergeStyles(TEXT_STYLES.h1, {
+                    fontSize: DESIGN_TOKENS.typography.sizes['4xl'],
+                    color: COLORS.warning,
+                    marginBottom: DESIGN_TOKENS.spacing[2],
+                    textShadow: `0 0 20px ${COLORS.warning}30`
+                  })}>
                     {Object.keys(discoveryStats?.categoriesDiscovered || {}).length}
                   </div>
-                  <div style={{ fontSize: '14px', color: COLORS.TEXT_SECONDARY }}>
+                  <div style={mergeStyles(TEXT_STYLES.caption, {
+                    color: COLORS.textSecondary,
+                    fontWeight: DESIGN_TOKENS.typography.weights.medium,
+                    textTransform: 'uppercase',
+                    letterSpacing: DESIGN_TOKENS.typography.letterSpacing.wide
+                  })}>
                     Categories Explored
                   </div>
                 </div>
               </div>
 
-              {/* Category Badges */}
-              <div style={mergeStyles(CARD_STYLES.elevated, { marginBottom: '25px' })}>
-                <h3 style={{ margin: '0 0 15px 0', fontSize: '18px' }}>
+              {/* Category Achievements */}
+              <div style={mergeStyles(CARD_STYLES.elevated, {
+                marginBottom: DESIGN_TOKENS.spacing[6]
+              })}>
+                <h3 style={mergeStyles(TEXT_STYLES.h3, {
+                  margin: `0 0 ${DESIGN_TOKENS.spacing[4]} 0`
+                })}>
                   Category Achievements
                 </h3>
                 <div style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-                  gap: '15px'
+                  gap: DESIGN_TOKENS.spacing[3]
                 }}>
                   {Object.values(GLYPH_CATEGORIES).map(category => {
                     const count = discoveryStats?.categoriesDiscovered[category] || 0;
                     const badge = getBadgeForCategory(category);
                     
                     return (
-                      <div key={category} style={{
+                      <div key={category} style={mergeStyles(CARD_STYLES.base, {
                         textAlign: 'center',
-                        padding: '15px',
-                        borderRadius: '8px',
-                        backgroundColor: count > 0 ? COLORS.BG_LIGHT : COLORS.BG_MUTED
-                      }}>
-                        <div style={{ fontSize: '24px', marginBottom: '5px' }}>
+                        padding: DESIGN_TOKENS.spacing[4],
+                        backgroundColor: count > 0 ? COLORS.bgSecondary : COLORS.bgMuted,
+                        transition: `all ${DESIGN_TOKENS.motion.durations.normal} ease`,
+                        border: badge ? `2px solid ${badge.color}30` : `1px solid ${COLORS.borderLight}`,
+                        boxShadow: badge ? badge.glow : DESIGN_TOKENS.shadows.sm
+                      })}>
+                        <div style={{ 
+                          fontSize: DESIGN_TOKENS.typography.sizes['2xl'], 
+                          marginBottom: DESIGN_TOKENS.spacing[2],
+                          filter: badge ? `drop-shadow(0 0 4px ${badge.color}40)` : 'none'
+                        }}>
                           {getCategoryIcon(category)}
                         </div>
-                        <div style={{ fontSize: '12px', fontWeight: '500', marginBottom: '5px' }}>
+                        <div style={mergeStyles(TEXT_STYLES.caption, {
+                          fontWeight: DESIGN_TOKENS.typography.weights.medium,
+                          marginBottom: DESIGN_TOKENS.spacing[1]
+                        })}>
                           {category}
                         </div>
-                        <div style={{ fontSize: '16px', fontWeight: 'bold', color: badge?.color || COLORS.TEXT_MUTED }}>
+                        <div style={mergeStyles(TEXT_STYLES.h3, {
+                          color: badge?.color || COLORS.textMuted,
+                          margin: `0 0 ${DESIGN_TOKENS.spacing[1]} 0`,
+                          textShadow: badge ? `0 0 8px ${badge.color}40` : 'none'
+                        })}>
                           {count}
                         </div>
                         {badge && (
-                          <div style={{ fontSize: '10px', color: badge.color, fontWeight: '500' }}>
+                          <div style={mergeStyles(TEXT_STYLES.caption, {
+                            color: badge.color,
+                            fontWeight: DESIGN_TOKENS.typography.weights.semibold,
+                            fontSize: DESIGN_TOKENS.typography.sizes.xs,
+                            textTransform: 'uppercase',
+                            letterSpacing: DESIGN_TOKENS.typography.letterSpacing.wide
+                          })}>
                             {badge.level}
                           </div>
                         )}
@@ -313,20 +463,50 @@ export default function UserProfilePage({ user, userProfile, onClose }) {
 
               {/* Timeline */}
               {discoveryStats?.firstDiscovery && (
-                <div style={mergeStyles(CARD_STYLES.elevated)}>
-                  <h3 style={{ margin: '0 0 15px 0', fontSize: '18px' }}>
+                <div style={CARD_STYLES.elevated}>
+                  <h3 style={mergeStyles(TEXT_STYLES.h3, {
+                    margin: `0 0 ${DESIGN_TOKENS.spacing[4]} 0`
+                  })}>
                     Explorer Timeline
                   </h3>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                    <div>
-                      <div style={{ color: COLORS.TEXT_SECONDARY }}>First Discovery</div>
-                      <div style={{ fontWeight: '500' }}>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: DESIGN_TOKENS.spacing[4]
+                  }}>
+                    <div style={mergeStyles(CARD_STYLES.base, {
+                      padding: DESIGN_TOKENS.spacing[4],
+                      backgroundColor: COLORS.bgSecondary,
+                      textAlign: 'center'
+                    })}>
+                      <div style={mergeStyles(TEXT_STYLES.caption, {
+                        color: COLORS.textSecondary,
+                        marginBottom: DESIGN_TOKENS.spacing[1]
+                      })}>
+                        First Discovery
+                      </div>
+                      <div style={mergeStyles(TEXT_STYLES.body, {
+                        fontWeight: DESIGN_TOKENS.typography.weights.medium,
+                        color: COLORS.primary
+                      })}>
                         {formatDate(discoveryStats.firstDiscovery)}
                       </div>
                     </div>
-                    <div>
-                      <div style={{ color: COLORS.TEXT_SECONDARY }}>Latest Discovery</div>
-                      <div style={{ fontWeight: '500' }}>
+                    <div style={mergeStyles(CARD_STYLES.base, {
+                      padding: DESIGN_TOKENS.spacing[4],
+                      backgroundColor: COLORS.bgSecondary,
+                      textAlign: 'center'
+                    })}>
+                      <div style={mergeStyles(TEXT_STYLES.caption, {
+                        color: COLORS.textSecondary,
+                        marginBottom: DESIGN_TOKENS.spacing[1]
+                      })}>
+                        Latest Discovery
+                      </div>
+                      <div style={mergeStyles(TEXT_STYLES.body, {
+                        fontWeight: DESIGN_TOKENS.typography.weights.medium,
+                        color: COLORS.success
+                      })}>
                         {formatDate(discoveryStats.lastDiscovery)}
                       </div>
                     </div>
@@ -344,33 +524,57 @@ export default function UserProfilePage({ user, userProfile, onClose }) {
 
           {activeTab === 'discovered' && (
             <div>
-              <div style={{ marginBottom: '15px', fontSize: '16px', color: COLORS.TEXT_SECONDARY }}>
+              <div style={mergeStyles(TEXT_STYLES.body, {
+                marginBottom: DESIGN_TOKENS.spacing[4],
+                color: COLORS.textSecondary
+              })}>
                 {discoveredGlyphs.length} glyphs discovered
               </div>
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-                gap: '15px'
+                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                gap: DESIGN_TOKENS.spacing[4]
               }}>
                 {discoveredGlyphs.map(glyph => (
-                  <div key={glyph.id} style={mergeStyles(CARD_STYLES.base, { padding: '15px' })}>
-                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-                      <span style={{ fontSize: '20px', marginRight: '10px' }}>
+                  <div key={glyph.id} style={mergeStyles(CARD_STYLES.interactive, {
+                    padding: DESIGN_TOKENS.spacing[4]
+                  })}>
+                    <div style={mergeStyles(LAYOUT.flex, {
+                      marginBottom: DESIGN_TOKENS.spacing[3],
+                      gap: DESIGN_TOKENS.spacing[2]
+                    })}>
+                      <span style={{ 
+                        fontSize: DESIGN_TOKENS.typography.sizes.xl,
+                        filter: `drop-shadow(0 0 3px ${COLORS.primary}40)`
+                      }}>
                         {getCategoryIcon(glyph.category)}
                       </span>
                       <div>
-                        <div style={{ fontWeight: '500', fontSize: '14px' }}>
+                        <div style={mergeStyles(TEXT_STYLES.caption, {
+                          fontWeight: DESIGN_TOKENS.typography.weights.medium,
+                          color: COLORS.textPrimary
+                        })}>
                           {glyph.category}
                         </div>
-                        <div style={{ fontSize: '12px', color: COLORS.TEXT_SECONDARY }}>
+                        <div style={mergeStyles(TEXT_STYLES.caption, {
+                          color: COLORS.textMuted,
+                          fontSize: DESIGN_TOKENS.typography.sizes.xs
+                        })}>
                           {formatDate(glyph.discovered_at)}
                         </div>
                       </div>
                     </div>
-                    <div style={{ fontSize: '14px', lineHeight: '1.4', marginBottom: '10px' }}>
+                    <div style={mergeStyles(TEXT_STYLES.body, {
+                      lineHeight: DESIGN_TOKENS.typography.lineHeights.normal,
+                      marginBottom: DESIGN_TOKENS.spacing[2],
+                      color: COLORS.textSecondary
+                    })}>
                       {glyph.text?.substring(0, 100)}{glyph.text?.length > 100 ? '...' : ''}
                     </div>
-                    <div style={{ fontSize: '12px', color: COLORS.TEXT_MUTED }}>
+                    <div style={mergeStyles(TEXT_STYLES.caption, {
+                      color: COLORS.textMuted,
+                      fontSize: DESIGN_TOKENS.typography.sizes.xs
+                    })}>
                       📍 {glyph.latitude.toFixed(4)}, {glyph.longitude.toFixed(4)}
                     </div>
                   </div>
@@ -381,17 +585,18 @@ export default function UserProfilePage({ user, userProfile, onClose }) {
 
           {activeTab === 'created' && (
             <div>
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                marginBottom: '15px' 
-              }}>
-                <div style={{ fontSize: '16px', color: COLORS.TEXT_SECONDARY }}>
+              <div style={mergeStyles(LAYOUT.flexBetween, {
+                marginBottom: DESIGN_TOKENS.spacing[4]
+              })}>
+                <div style={mergeStyles(TEXT_STYLES.body, {
+                  color: COLORS.textSecondary
+                })}>
                   {createdGlyphs.length} memories created
                 </div>
                 {createdGlyphs.length > 0 && (
-                  <div style={{ fontSize: '12px', color: COLORS.TEXT_MUTED }}>
+                  <div style={mergeStyles(TEXT_STYLES.caption, {
+                    color: COLORS.textMuted
+                  })}>
                     Click memories to manage them
                   </div>
                 )}
@@ -399,26 +604,16 @@ export default function UserProfilePage({ user, userProfile, onClose }) {
               
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-                gap: '15px'
+                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                gap: DESIGN_TOKENS.spacing[4]
               }}>
                 {createdGlyphs.map(glyph => (
                   <div 
                     key={glyph.id} 
-                    style={mergeStyles(CARD_STYLES.base, { 
-                      padding: '15px',
-                      position: 'relative',
-                      transition: 'transform 0.2s, box-shadow 0.2s',
-                      cursor: 'pointer'
+                    style={mergeStyles(CARD_STYLES.interactive, {
+                      padding: DESIGN_TOKENS.spacing[4],
+                      position: 'relative'
                     })}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-                    }}
                   >
                     {/* Delete button */}
                     <button
@@ -429,39 +624,52 @@ export default function UserProfilePage({ user, userProfile, onClose }) {
                       disabled={deletingGlyphId === glyph.id}
                       style={{
                         position: 'absolute',
-                        top: '8px',
-                        right: '8px',
-                        background: 'rgba(220, 53, 69, 0.8)',
-                        color: 'white',
+                        top: DESIGN_TOKENS.spacing[2],
+                        right: DESIGN_TOKENS.spacing[2],
+                        background: `${COLORS.error}DD`,
+                        color: COLORS.textInverse,
                         border: 'none',
-                        borderRadius: '50%',
+                        borderRadius: DESIGN_TOKENS.radius.full,
                         width: '24px',
                         height: '24px',
                         cursor: deletingGlyphId === glyph.id ? 'not-allowed' : 'pointer',
-                        fontSize: '12px',
+                        fontSize: DESIGN_TOKENS.typography.sizes.xs,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         opacity: 0.7,
-                        transition: 'opacity 0.2s'
+                        transition: `opacity ${DESIGN_TOKENS.motion.durations.fast} ease`,
+                        backdropFilter: 'blur(4px)'
                       }}
                       onMouseEnter={(e) => e.target.style.opacity = '1'}
                       onMouseLeave={(e) => e.target.style.opacity = '0.7'}
                       title={deletingGlyphId === glyph.id ? 'Deleting...' : 'Delete memory'}
                     >
-                      {deletingGlyphId === glyph.id ? '⏳' : '🗑'}
+                      {deletingGlyphId === glyph.id ? '⏳' : '🗑️'}
                     </button>
 
                     {/* Memory content */}
-                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-                      <span style={{ fontSize: '20px', marginRight: '10px' }}>
+                    <div style={mergeStyles(LAYOUT.flex, {
+                      marginBottom: DESIGN_TOKENS.spacing[3],
+                      gap: DESIGN_TOKENS.spacing[2]
+                    })}>
+                      <span style={{ 
+                        fontSize: DESIGN_TOKENS.typography.sizes.xl,
+                        filter: `drop-shadow(0 0 3px ${COLORS.success}40)`
+                      }}>
                         {getCategoryIcon(glyph.category)}
                       </span>
                       <div>
-                        <div style={{ fontWeight: '500', fontSize: '14px' }}>
+                        <div style={mergeStyles(TEXT_STYLES.caption, {
+                          fontWeight: DESIGN_TOKENS.typography.weights.medium,
+                          color: COLORS.textPrimary
+                        })}>
                           {glyph.category}
                         </div>
-                        <div style={{ fontSize: '12px', color: COLORS.TEXT_SECONDARY }}>
+                        <div style={mergeStyles(TEXT_STYLES.caption, {
+                          color: COLORS.textMuted,
+                          fontSize: DESIGN_TOKENS.typography.sizes.xs
+                        })}>
                           {formatDate(glyph.created_at)}
                         </div>
                       </div>
@@ -469,7 +677,7 @@ export default function UserProfilePage({ user, userProfile, onClose }) {
                     
                     {/* Photo if exists */}
                     {glyph.photo_url && (
-                      <div style={{ marginBottom: '10px' }}>
+                      <div style={{ marginBottom: DESIGN_TOKENS.spacing[3] }}>
                         <img 
                           src={glyph.photo_url} 
                           alt="Memory photo"
@@ -477,23 +685,32 @@ export default function UserProfilePage({ user, userProfile, onClose }) {
                             width: '100%',
                             height: '120px',
                             objectFit: 'cover',
-                            borderRadius: '6px',
-                            border: '1px solid #e1e5e9'
+                            borderRadius: DESIGN_TOKENS.radius.md,
+                            border: `1px solid ${COLORS.borderLight}`
                           }}
                         />
                       </div>
                     )}
                     
-                    <div style={{ fontSize: '14px', lineHeight: '1.4', marginBottom: '10px' }}>
+                    <div style={mergeStyles(TEXT_STYLES.body, {
+                      lineHeight: DESIGN_TOKENS.typography.lineHeights.normal,
+                      marginBottom: DESIGN_TOKENS.spacing[3],
+                      color: COLORS.textSecondary
+                    })}>
                       {glyph.text?.substring(0, 100)}{glyph.text?.length > 100 ? '...' : ''}
                     </div>
-                    <div style={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      fontSize: '12px', 
-                      color: COLORS.TEXT_MUTED 
-                    }}>
-                      <span>⭐ {(glyph.rating_avg || 0).toFixed(1)} ({glyph.rating_count || 0})</span>
+                    
+                    <div style={mergeStyles(LAYOUT.flexBetween, {
+                      fontSize: DESIGN_TOKENS.typography.sizes.xs,
+                      color: COLORS.textMuted
+                    })}>
+                      <span style={mergeStyles(LAYOUT.flex, {
+                        alignItems: 'center',
+                        gap: DESIGN_TOKENS.spacing[1]
+                      })}>
+                        <span>⭐</span>
+                        <span>{(glyph.rating_avg || 0).toFixed(1)} ({glyph.rating_count || 0})</span>
+                      </span>
                       <span>📍 {glyph.latitude.toFixed(4)}, {glyph.longitude.toFixed(4)}</span>
                     </div>
                   </div>
@@ -503,12 +720,22 @@ export default function UserProfilePage({ user, userProfile, onClose }) {
               {createdGlyphs.length === 0 && (
                 <div style={{
                   textAlign: 'center',
-                  padding: '60px 20px',
-                  color: COLORS.TEXT_MUTED
+                  padding: DESIGN_TOKENS.spacing[12],
+                  color: COLORS.textMuted
                 }}>
-                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>💭</div>
-                  <div style={{ fontSize: '16px', marginBottom: '8px' }}>No memories yet</div>
-                  <div style={{ fontSize: '14px' }}>
+                  <div style={{ 
+                    fontSize: DESIGN_TOKENS.typography.sizes['5xl'], 
+                    marginBottom: DESIGN_TOKENS.spacing[4] 
+                  }}>
+                    💭
+                  </div>
+                  <div style={mergeStyles(TEXT_STYLES.body, {
+                    marginBottom: DESIGN_TOKENS.spacing[2],
+                    color: COLORS.textSecondary
+                  })}>
+                    No memories yet
+                  </div>
+                  <div style={TEXT_STYLES.caption}>
                     Start creating memories by exploring and saving special moments!
                   </div>
                 </div>

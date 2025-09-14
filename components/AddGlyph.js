@@ -13,10 +13,15 @@ import {
   SUCCESS_MESSAGES 
 } from '../constants/config';
 import { 
+  COLORS,
   BUTTON_STYLES, 
   INPUT_STYLES, 
   MODAL_STYLES,
   MESSAGE_STYLES,
+  TEXT_STYLES,
+  CARD_STYLES,
+  SPACING,
+  RADIUS,
   mergeStyles 
 } from '../constants/styles';
 
@@ -125,37 +130,42 @@ export default function AddGlyph({ coordinates, onClose, onGlyphCreated, user })
   };
 
   return (
-    <div style={mergeStyles(MODAL_STYLES.overlay)}>
+    <div style={MODAL_STYLES.overlay}>
       <div style={mergeStyles(MODAL_STYLES.small, {
         minWidth: '400px',
         maxWidth: '500px',
         maxHeight: '90vh',
         overflow: 'auto'
       })}>
-        <h3 style={{ margin: '0 0 15px 0', fontSize: '20px', color: '#333' }}>
+        <h3 style={mergeStyles(TEXT_STYLES.h3, { 
+          margin: `0 0 ${SPACING[4]} 0`,
+          display: 'flex',
+          alignItems: 'center',
+          gap: SPACING[2]
+        })}>
           🔮 Create New Glyph
         </h3>
-        <p style={{ 
-          margin: '0 0 20px 0', 
-          fontSize: '14px', 
-          color: '#666',
-          backgroundColor: '#f8f9fa',
-          padding: '8px 12px',
-          borderRadius: '6px'
-        }}>
+        
+        <div style={mergeStyles(CARD_STYLES.base, {
+          padding: `${SPACING[2]} ${SPACING[3]}`,
+          marginBottom: SPACING[5],
+          backgroundColor: COLORS.bgSecondary,
+          fontSize: TEXT_STYLES.caption.fontSize,
+          color: COLORS.textSecondary
+        })}>
           📍 {coordinates?.lat.toFixed(6)}, {coordinates?.lng.toFixed(6)}
-        </p>
+        </div>
         
         <form onSubmit={handleSubmit}>
           {/* Category Selection */}
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#333' }}>
+          <div style={{ marginBottom: SPACING[4] }}>
+            <label style={TEXT_STYLES.label}>
               Glyph Type:
             </label>
             <select 
               value={category} 
               onChange={(e) => setCategory(e.target.value)}
-              style={mergeStyles(INPUT_STYLES.base)}
+              style={mergeStyles(INPUT_STYLES.base, INPUT_STYLES.select)}
             >
               {CATEGORY_OPTIONS.map(option => (
                 <option key={option.value} value={option.value}>
@@ -166,30 +176,40 @@ export default function AddGlyph({ coordinates, onClose, onGlyphCreated, user })
           </div>
 
           {/* Photo Upload Section */}
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#333' }}>
+          <div style={{ marginBottom: SPACING[4] }}>
+            <label style={TEXT_STYLES.label}>
               Photo (optional):
             </label>
             
             {!selectedFile ? (
-              <div style={{
-                border: '2px dashed #e1e5e9',
-                borderRadius: '8px',
-                padding: '20px',
-                textAlign: 'center',
-                backgroundColor: '#f8f9fa',
-                cursor: 'pointer',
-                transition: 'border-color 0.2s'
-              }}
-              onClick={() => document.getElementById('photo-input').click()}
-              onMouseEnter={(e) => e.target.style.borderColor = '#2563eb'}
-              onMouseLeave={(e) => e.target.style.borderColor = '#e1e5e9'}
+              <div 
+                style={mergeStyles(CARD_STYLES.base, {
+                  border: `2px dashed ${COLORS.borderMedium}`,
+                  padding: SPACING[5],
+                  textAlign: 'center',
+                  backgroundColor: COLORS.bgSecondary,
+                  cursor: 'pointer',
+                  transition: `border-color ${MOTION.durations.fast} ease`,
+                  ':hover': {
+                    borderColor: COLORS.primary
+                  }
+                })}
+                onClick={() => document.getElementById('photo-input').click()}
+                onMouseEnter={(e) => e.target.style.borderColor = COLORS.primary}
+                onMouseLeave={(e) => e.target.style.borderColor = COLORS.borderMedium}
               >
-                <div style={{ fontSize: '32px', marginBottom: '8px' }}>📷</div>
-                <p style={{ margin: '0 0 5px 0', fontSize: '14px', color: '#666' }}>
+                <div style={{ 
+                  fontSize: '32px', 
+                  marginBottom: SPACING[2] 
+                }}>
+                  📷
+                </div>
+                <p style={mergeStyles(TEXT_STYLES.body, { 
+                  margin: `0 0 ${SPACING[1]} 0`
+                })}>
                   Click to add a photo
                 </p>
-                <p style={{ margin: 0, fontSize: '12px', color: '#999' }}>
+                <p style={mergeStyles(TEXT_STYLES.caption, { margin: 0 })}>
                   JPG, PNG up to {FILE_LIMITS.MAX_SIZE_MB}MB
                 </p>
                 <input
@@ -209,8 +229,8 @@ export default function AddGlyph({ coordinates, onClose, onGlyphCreated, user })
                     width: '100%',
                     height: '150px',
                     objectFit: 'cover',
-                    borderRadius: '8px',
-                    border: '2px solid #e1e5e9'
+                    borderRadius: RADIUS.md,
+                    border: `2px solid ${COLORS.borderLight}`
                   }}
                 />
                 <button
@@ -218,29 +238,28 @@ export default function AddGlyph({ coordinates, onClose, onGlyphCreated, user })
                   onClick={removePhoto}
                   style={{
                     position: 'absolute',
-                    top: '8px',
-                    right: '8px',
-                    backgroundColor: 'rgba(220, 53, 69, 0.9)',
-                    color: 'white',
+                    top: SPACING[2],
+                    right: SPACING[2],
+                    backgroundColor: COLORS.error,
+                    color: COLORS.textInverse,
                     border: 'none',
-                    borderRadius: '50%',
+                    borderRadius: RADIUS.full,
                     width: '24px',
                     height: '24px',
                     cursor: 'pointer',
-                    fontSize: '12px',
+                    fontSize: TEXT_STYLES.caption.fontSize,
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    boxShadow: SHADOWS.md
                   }}
                 >
                   ✕
                 </button>
-                <div style={{
-                  marginTop: '8px',
-                  fontSize: '12px',
-                  color: '#666',
+                <div style={mergeStyles(TEXT_STYLES.caption, {
+                  marginTop: SPACING[2],
                   textAlign: 'center'
-                }}>
+                })}>
                   {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(1)}MB)
                 </div>
               </div>
@@ -248,8 +267,8 @@ export default function AddGlyph({ coordinates, onClose, onGlyphCreated, user })
           </div>
           
           {/* Message Input */}
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#333' }}>
+          <div style={{ marginBottom: SPACING[5] }}>
+            <label style={TEXT_STYLES.label}>
               Message:
             </label>
             <textarea 
@@ -260,25 +279,27 @@ export default function AddGlyph({ coordinates, onClose, onGlyphCreated, user })
               maxLength={TEXT_LIMITS.GLYPH_MESSAGE_MAX}
               style={mergeStyles(INPUT_STYLES.base, INPUT_STYLES.textarea)}
             />
-            <div style={{ 
-              fontSize: '12px', 
-              color: '#666', 
-              textAlign: 'right', 
-              marginTop: '5px' 
-            }}>
+            <div style={mergeStyles(TEXT_STYLES.caption, {
+              textAlign: 'right',
+              marginTop: SPACING[1]
+            })}>
               {message.length}/{TEXT_LIMITS.GLYPH_MESSAGE_MAX} characters
             </div>
           </div>
           
           {/* Action Buttons */}
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ 
+            display: 'flex', 
+            gap: SPACING[3] 
+          }}>
             <button 
               type="submit" 
               disabled={isSubmitting || !message.trim()}
               style={mergeStyles(
                 BUTTON_STYLES.base,
                 isSubmitting || !message.trim() ? BUTTON_STYLES.disabled : BUTTON_STYLES.primary,
-                { flex: 1, padding: '14px 20px', fontSize: '16px', fontWeight: '600' }
+                BUTTON_STYLES.large,
+                { flex: 1 }
               )}
             >
               {isSubmitting ? 'Creating...' : '🔮 Create Glyph'}
@@ -289,7 +310,8 @@ export default function AddGlyph({ coordinates, onClose, onGlyphCreated, user })
               style={mergeStyles(
                 BUTTON_STYLES.base,
                 BUTTON_STYLES.secondary,
-                { flex: 1, padding: '14px 20px', fontSize: '16px' }
+                BUTTON_STYLES.large,
+                { flex: 1 }
               )}
             >
               Cancel

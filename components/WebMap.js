@@ -17,6 +17,17 @@ import {
   ERROR_MESSAGES,
   RATING_CONFIG 
 } from '../constants/config';
+import {
+  COLORS,
+  BUTTON_STYLES,
+  CARD_STYLES,
+  TEXT_STYLES,
+  MESSAGE_STYLES,
+  DESIGN_TOKENS,
+  LAYOUT,
+  APP_STYLES,
+  mergeStyles
+} from '../constants/styles';
 
 export default function WebMap({ user, userProfile }) {
   console.log('WebMap rendering with user:', user?.email, 'profile:', userProfile?.username);
@@ -86,19 +97,20 @@ export default function WebMap({ user, userProfile }) {
       // Mark this glyph as rendered
       markGlyphAsRendered(glyph.id);
 
-      // Create a stable marker element
+      // Create a stable marker element using ORIGINAL working approach
       const markerElement = document.createElement('div');
       const isHighRated = glyph.rating_avg >= RATING_CONFIG.HIGH_RATING_THRESHOLD && 
                    glyph.rating_count >= RATING_CONFIG.MIN_RATINGS_FOR_HIGHLIGHT;
 
-      
       markerElement.innerHTML = getCategoryIcon(glyph.category);
+      
+      // Use original working styling approach but with design tokens
       markerElement.style.cssText = `
-        font-size: 24px;
+        font-size: ${DESIGN_TOKENS.typography.sizes['2xl']};
         cursor: pointer;
         filter: ${isHighRated 
-          ? 'drop-shadow(0 0 6px rgba(255, 193, 7, 0.8))' 
-          : 'drop-shadow(0 0 3px rgba(0,0,0,0.3))'};
+          ? `drop-shadow(0 0 6px ${COLORS.glyphGlow || 'rgba(255, 193, 7, 0.8)'})` 
+          : `drop-shadow(0 0 3px rgba(0,0,0,0.3))`};
         user-select: none;
         pointer-events: auto;
         display: block;
@@ -108,7 +120,7 @@ export default function WebMap({ user, userProfile }) {
       `;
       markerElement.title = `${glyph.category}: ${glyph.text?.substring(0, 50)}...`;
 
-      // Simplified hover effects
+      // Original working hover effects
       markerElement.addEventListener('mouseenter', () => {
         markerElement.style.opacity = '0.8';
       });
@@ -117,8 +129,10 @@ export default function WebMap({ user, userProfile }) {
         markerElement.style.opacity = '1';
       });
 
-      // Create marker using the hook's method
-      const marker = createMarker(glyph.longitude, glyph.latitude, markerElement);
+      // CREATE MARKER DIRECTLY - bypass the hook that might be causing issues
+      const marker = new mapboxgl.Marker(markerElement)
+        .setLngLat([glyph.longitude, glyph.latitude])
+        .addTo(map);
 
       // Add click handler to marker element
       markerElement.addEventListener('click', async(e) => {
@@ -134,7 +148,7 @@ export default function WebMap({ user, userProfile }) {
         openGlyphDetail(glyph);
       });
 
-      // Track the marker using the hook's method
+      // Track the marker for cleanup using the hook's method
       if (marker) {
         addMarkerRef(marker);
       }
@@ -229,113 +243,152 @@ export default function WebMap({ user, userProfile }) {
       
       {/* Location controls */}
       {user && (
-      <div style={{
-        position: 'absolute',
-        top: '10px',
-        left: '10px',
-        zIndex: 1000,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '10px'
-      }}>
-        <button
-          onClick={getUserLocation}
-          disabled={isLoadingLocation}
-          style={{
-            padding: '10px',
-            backgroundColor: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: isLoadingLocation ? 'not-allowed' : 'pointer',
-            fontSize: '14px',
-            fontWeight: '500',
-            boxShadow: '0 2px 8px rgba(0,123,255,0.3)',
-            transition: 'all 0.2s'
-          }}
-        >
-          {isLoadingLocation ? 'Finding Location...' : '📍 Find My Location'}
-        </button>
-        
-        {userLocation && (
+        <div style={{
+          position: 'absolute',
+          top: DESIGN_TOKENS.spacing[2],
+          left: DESIGN_TOKENS.spacing[2],
+          zIndex: DESIGN_TOKENS.zIndex.overlay,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: DESIGN_TOKENS.spacing[2]
+        }}>
           <button
-            onClick={createGlyphHere}
-            style={{
-              padding: '10px',
-              backgroundColor: '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500',
-              boxShadow: '0 2px 8px rgba(40,167,69,0.3)',
-              transition: 'all 0.2s'
-            }}
+            onClick={getUserLocation}
+            disabled={isLoadingLocation}
+            style={mergeStyles(
+              BUTTON_STYLES.base,
+              isLoadingLocation ? BUTTON_STYLES.disabled : BUTTON_STYLES.info,
+              {
+                display: 'flex',
+                alignItems: 'center',
+                gap: DESIGN_TOKENS.spacing[2],
+                backdropFilter: 'blur(8px)',
+                backgroundColor: `${COLORS.info}EE`,
+                boxShadow: DESIGN_TOKENS.shadows.lg
+              }
+            )}
           >
-            {isPersonalMode ? '💭 Save Memory Here' : '✨ Create Glyph Here'}
+            <span style={{ fontSize: DESIGN_TOKENS.typography.sizes.sm }}>
+              {isLoadingLocation ? '⏳' : '🧭'}
+            </span>
+            {isLoadingLocation ? 'Finding Location...' : 'Find My Location'}
           </button>
-        )}
-      </div>
-    )}
+          
+          {userLocation && (
+            <button
+              onClick={createGlyphHere}
+              style={mergeStyles(
+                BUTTON_STYLES.base,
+                BUTTON_STYLES.success,
+                {
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: DESIGN_TOKENS.spacing[2],
+                  backdropFilter: 'blur(8px)',
+                  backgroundColor: `${COLORS.success}EE`,
+                  boxShadow: DESIGN_TOKENS.shadows.lg
+                }
+              )}
+            >
+              <span style={{ fontSize: DESIGN_TOKENS.typography.sizes.sm }}>
+                {isPersonalMode ? '💭' : '✨'}
+              </span>
+              {isPersonalMode ? 'Save Memory Here' : 'Create Glyph Here'}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Error displays */}
       {locationError && (
-        <div style={{
+        <div style={mergeStyles(MESSAGE_STYLES.base, MESSAGE_STYLES.error, {
           position: 'absolute',
-          top: '10px',
+          top: DESIGN_TOKENS.spacing[2],
           left: '50%',
           transform: 'translateX(-50%)',
-          backgroundColor: '#dc3545',
-          color: 'white',
-          padding: '10px 15px',
-          borderRadius: '8px',
-          zIndex: 1000,
+          zIndex: DESIGN_TOKENS.zIndex.overlay,
           maxWidth: '300px',
           textAlign: 'center',
-          fontSize: '14px',
-          boxShadow: '0 2px 8px rgba(220,53,69,0.3)'
-        }}>
-          {locationError}
+          backdropFilter: 'blur(8px)',
+          backgroundColor: `${COLORS.errorLight}F0`,
+          boxShadow: DESIGN_TOKENS.shadows.lg
+        })}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: DESIGN_TOKENS.spacing[2]
+          }}>
+            <span style={{ fontSize: DESIGN_TOKENS.typography.sizes.lg }}>⚠️</span>
+            <span>{locationError}</span>
+          </div>
         </div>
       )}
 
       {glyphError && (
-        <div style={{
+        <div style={mergeStyles(MESSAGE_STYLES.base, MESSAGE_STYLES.error, {
           position: 'absolute',
-          top: '60px',
+          top: DESIGN_TOKENS.spacing[12],
           left: '50%',
           transform: 'translateX(-50%)',
-          backgroundColor: '#dc3545',
-          color: 'white',
-          padding: '10px 15px',
-          borderRadius: '8px',
-          zIndex: 1000,
+          zIndex: DESIGN_TOKENS.zIndex.overlay,
           maxWidth: '300px',
           textAlign: 'center',
-          fontSize: '14px',
-          boxShadow: '0 2px 8px rgba(220,53,69,0.3)'
-        }}>
-          {glyphError}
+          backdropFilter: 'blur(8px)',
+          backgroundColor: `${COLORS.errorLight}F0`,
+          boxShadow: DESIGN_TOKENS.shadows.lg
+        })}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: DESIGN_TOKENS.spacing[2]
+          }}>
+            <span style={{ fontSize: DESIGN_TOKENS.typography.sizes.lg }}>❌</span>
+            <span>{glyphError}</span>
+          </div>
         </div>
       )}
 
       {/* Loading indicator for glyphs */}
       {isLoadingGlyphs && (
-        <div style={{
+        <div style={mergeStyles(CARD_STYLES.glass, {
           position: 'absolute',
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          backgroundColor: 'rgba(255, 255, 255, 0.9)',
-          padding: '15px 20px',
-          borderRadius: '8px',
-          zIndex: 1000,
+          padding: `${DESIGN_TOKENS.spacing[4]} ${DESIGN_TOKENS.spacing[5]}`,
+          zIndex: DESIGN_TOKENS.zIndex.overlay,
           textAlign: 'center',
-          fontSize: '14px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-        }}>
-          {isPersonalMode ? 'Loading memories...' : 'Loading nearby glyphs...'}
+          backdropFilter: 'blur(12px)',
+          boxShadow: DESIGN_TOKENS.shadows.xl
+        })}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: DESIGN_TOKENS.spacing[3]
+          }}>
+            <div style={{
+              width: DESIGN_TOKENS.spacing[5],
+              height: DESIGN_TOKENS.spacing[5],
+              border: `3px solid ${COLORS.primary}30`,
+              borderTop: `3px solid ${COLORS.primary}`,
+              borderRadius: DESIGN_TOKENS.radius.full,
+              animation: 'spin 1s linear infinite'
+            }} />
+            <span style={mergeStyles(TEXT_STYLES.body, {
+              color: COLORS.textPrimary,
+              fontWeight: DESIGN_TOKENS.typography.weights.medium
+            })}>
+              {isPersonalMode ? 'Loading memories...' : 'Loading nearby glyphs...'}
+            </span>
+          </div>
+          <style>
+            {`
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+            `}
+          </style>
         </div>
       )}
 
@@ -343,9 +396,9 @@ export default function WebMap({ user, userProfile }) {
       {user && streakData && (
         <div style={{
           position: 'absolute',
-          top: '180px',
-          right: '20px',
-          zIndex: 1000
+          top: DESIGN_TOKENS.spacing[32],
+          left: DESIGN_TOKENS.spacing[5],
+          zIndex: DESIGN_TOKENS.zIndex.overlay
         }}>
           <StreakDisplay streakData={streakData} compact={true} />
         </div>
@@ -353,31 +406,96 @@ export default function WebMap({ user, userProfile }) {
 
       {/* Location info */}
       {userLocation && (
-        <div style={{
+        <div style={mergeStyles(CARD_STYLES.glass, {
           position: 'absolute',
-          bottom: '10px',
-          left: '10px',
-          backgroundColor: 'rgba(255, 255, 255, 0.95)',
-          padding: '8px 12px',
-          borderRadius: '8px',
-          fontSize: '12px',
-          zIndex: 1000,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          border: '1px solid #e1e5e9'
-        }}>
-          <div style={{ fontWeight: '500', color: '#333' }}>
-            📍 {userLocation.lat.toFixed(6)}, {userLocation.lng.toFixed(6)}
+          bottom: DESIGN_TOKENS.spacing[2],
+          left: DESIGN_TOKENS.spacing[2],
+          padding: `${DESIGN_TOKENS.spacing[2]} ${DESIGN_TOKENS.spacing[3]}`,
+          zIndex: DESIGN_TOKENS.zIndex.overlay,
+          backdropFilter: 'blur(12px)',
+          border: `1px solid ${COLORS.borderLight}50`
+        })}>
+          <div style={mergeStyles(TEXT_STYLES.caption, {
+            fontWeight: DESIGN_TOKENS.typography.weights.medium,
+            color: COLORS.textPrimary,
+            display: 'flex',
+            alignItems: 'center',
+            gap: DESIGN_TOKENS.spacing[1],
+            marginBottom: DESIGN_TOKENS.spacing[1]
+          })}>
+            <span style={{ 
+              fontSize: DESIGN_TOKENS.typography.sizes.sm,
+              filter: `drop-shadow(0 0 3px ${COLORS.primary})`
+            }}>
+              📍
+            </span>
+            {userLocation.lat.toFixed(6)}, {userLocation.lng.toFixed(6)}
           </div>
-          <div style={{ color: '#666', marginTop: '2px' }}>
+          
+          <div style={mergeStyles(TEXT_STYLES.caption, {
+            color: COLORS.textMuted,
+            fontSize: DESIGN_TOKENS.typography.sizes.xs,
+            marginBottom: DESIGN_TOKENS.spacing[1]
+          })}>
             Accuracy: ±{Math.round(userLocation.accuracy)}m
           </div>
+          
           {user && (
-            <div style={{ color: '#666', marginTop: '2px', fontSize: '11px' }}>
-              {isPersonalMode ? `${glyphs.length} memories nearby` : `${glyphs.length} discoveries nearby`}
+            <div style={mergeStyles(TEXT_STYLES.caption, {
+              color: COLORS.textSecondary,
+              fontSize: DESIGN_TOKENS.typography.sizes.xs,
+              display: 'flex',
+              alignItems: 'center',
+              gap: DESIGN_TOKENS.spacing[1]
+            })}>
+              <span style={{
+                width: DESIGN_TOKENS.spacing[2],
+                height: DESIGN_TOKENS.spacing[2],
+                borderRadius: DESIGN_TOKENS.radius.full,
+                backgroundColor: glyphs.length > 0 ? COLORS.success : COLORS.textMuted,
+                display: 'inline-block',
+                animation: glyphs.length > 0 ? 'gentle-pulse 2s infinite' : 'none'
+              }} />
+              {isPersonalMode 
+                ? `${glyphs.length} memories nearby` 
+                : `${glyphs.length} discoveries nearby`
+              }
             </div>
           )}
+          
+          <style>
+            {`
+              @keyframes gentle-pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.6; }
+              }
+            `}
+          </style>
         </div>
       )}
+
+      {/* Map Attribution Enhancement */}
+      <div style={{
+        position: 'absolute',
+        bottom: DESIGN_TOKENS.spacing[1],
+        right: DESIGN_TOKENS.spacing[1],
+        zIndex: DESIGN_TOKENS.zIndex.base + 1,
+        fontSize: DESIGN_TOKENS.typography.sizes.xs,
+        color: COLORS.textMuted,
+        backgroundColor: `${COLORS.bgPrimary}CC`,
+        padding: `${DESIGN_TOKENS.spacing[1]} ${DESIGN_TOKENS.spacing[2]}`,
+        borderRadius: DESIGN_TOKENS.radius.sm,
+        backdropFilter: 'blur(4px)'
+      }}>
+        <span style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: DESIGN_TOKENS.spacing[1]
+        }}>
+          <span style={{ filter: `drop-shadow(0 0 2px ${COLORS.primary})` }}>🗺️</span>
+          Glyph Explorer
+        </span>
+      </div>
 
       {/* Add Glyph Modal */}
       {showAddGlyph && (

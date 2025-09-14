@@ -1,7 +1,15 @@
-// components/UserProfile.js
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import UserProfilePage from './UserProfilePage';
+import {
+  COLORS,
+  BUTTON_STYLES,
+  CARD_STYLES,
+  TEXT_STYLES,
+  DESIGN_TOKENS,
+  LAYOUT,
+  mergeStyles
+} from '../constants/styles';
 
 export default function UserProfile({ user, userProfile, onSignOut }) {
   const [showProfilePage, setShowProfilePage] = useState(false);
@@ -17,58 +25,219 @@ export default function UserProfile({ user, userProfile, onSignOut }) {
 
   return (
     <>
-      <div style={{
+      <div style={mergeStyles(CARD_STYLES.glass, {
         position: 'absolute',
-        top: '20px',
-        right: '20px',
-        background: 'rgba(255, 255, 255, 0.95)',
-        padding: '15px',
-        borderRadius: '12px',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-        zIndex: 100,
-        minWidth: '200px'
-      }}>
-        <div style={{ marginBottom: '10px' }}>
-          <div style={{ fontWeight: '600', fontSize: '16px', color: '#333' }}>
+        top: DESIGN_TOKENS.spacing[5],
+        right: DESIGN_TOKENS.spacing[5],
+        padding: DESIGN_TOKENS.spacing[4],
+        zIndex: DESIGN_TOKENS.zIndex.dropdown,
+        minWidth: '200px',
+        maxWidth: '280px'
+      })}>
+        {/* User Info Section */}
+        <div style={{ marginBottom: DESIGN_TOKENS.spacing[3] }}>
+          <div style={mergeStyles(TEXT_STYLES.body, {
+            fontWeight: DESIGN_TOKENS.typography.weights.semibold,
+            marginBottom: DESIGN_TOKENS.spacing[1],
+            display: 'flex',
+            alignItems: 'center',
+            gap: DESIGN_TOKENS.spacing[2]
+          })}>
+            <span style={{ 
+              fontSize: DESIGN_TOKENS.typography.sizes.lg,
+              filter: `drop-shadow(0 0 4px ${COLORS.primary})`
+            }}>
+              🧭
+            </span>
             Explorer: {userProfile?.username || user.email}
           </div>
-          <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
-            🏆 Explorer Level: Discoverer
+          
+          <div style={mergeStyles(TEXT_STYLES.caption, {
+            color: COLORS.textMuted,
+            display: 'flex',
+            alignItems: 'center',
+            gap: DESIGN_TOKENS.spacing[1]
+          })}>
+            <span style={{ 
+              fontSize: DESIGN_TOKENS.typography.sizes.sm,
+              filter: `drop-shadow(0 0 2px ${COLORS.warning})`
+            }}>
+              🏆
+            </span>
+            Explorer Level: Discoverer
           </div>
         </div>
         
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {/* Action Buttons */}
+        <div style={mergeStyles(LAYOUT.flexColumn, { gap: DESIGN_TOKENS.spacing[2] })}>
           <button
             onClick={() => setShowProfilePage(true)}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              backgroundColor: '#2563eb',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
+            style={mergeStyles(
+              BUTTON_STYLES.base,
+              BUTTON_STYLES.primary,
+              {
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: DESIGN_TOKENS.spacing[2]
+              }
+            )}
           >
-            📊 View Profile
+            <span style={{ fontSize: DESIGN_TOKENS.typography.sizes.sm }}>📊</span>
+            View Profile
           </button>
           
           <button
             onClick={handleSignOut}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              backgroundColor: '#dc2626',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px'
+            style={mergeStyles(
+              BUTTON_STYLES.base,
+              BUTTON_STYLES.secondary,
+              {
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: DESIGN_TOKENS.spacing[2],
+                transition: `all ${DESIGN_TOKENS.motion.durations.fast} ease`
+              }
+            )}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = COLORS.error;
+              e.target.style.borderColor = COLORS.error;
+              e.target.style.color = COLORS.textInverse;
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = COLORS.secondary;
+              e.target.style.borderColor = 'transparent';
+              e.target.style.color = COLORS.textInverse;
             }}
           >
+            <span style={{ fontSize: DESIGN_TOKENS.typography.sizes.sm }}>🚪</span>
             Sign Out
           </button>
+        </div>
+
+        {/* Quick Stats Preview */}
+        <div style={mergeStyles(CARD_STYLES.base, {
+          marginTop: DESIGN_TOKENS.spacing[3],
+          padding: DESIGN_TOKENS.spacing[3],
+          backgroundColor: COLORS.bgSecondary,
+          borderRadius: DESIGN_TOKENS.radius.md
+        })}>
+          <div style={mergeStyles(TEXT_STYLES.caption, {
+            color: COLORS.textMuted,
+            marginBottom: DESIGN_TOKENS.spacing[2],
+            textAlign: 'center',
+            fontWeight: DESIGN_TOKENS.typography.weights.medium,
+            textTransform: 'uppercase',
+            letterSpacing: DESIGN_TOKENS.typography.letterSpacing.wide
+          })}>
+            Quick Stats
+          </div>
+          
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: DESIGN_TOKENS.spacing[2],
+            textAlign: 'center'
+          }}>
+            <div>
+              <div style={mergeStyles(TEXT_STYLES.body, {
+                fontWeight: DESIGN_TOKENS.typography.weights.bold,
+                color: COLORS.primary,
+                fontSize: DESIGN_TOKENS.typography.sizes.lg
+              })}>
+                —
+              </div>
+              <div style={mergeStyles(TEXT_STYLES.caption, {
+                color: COLORS.textMuted,
+                fontSize: DESIGN_TOKENS.typography.sizes.xs
+              })}>
+                Discoveries
+              </div>
+            </div>
+            
+            <div>
+              <div style={mergeStyles(TEXT_STYLES.body, {
+                fontWeight: DESIGN_TOKENS.typography.weights.bold,
+                color: COLORS.success,
+                fontSize: DESIGN_TOKENS.typography.sizes.lg
+              })}>
+                —
+              </div>
+              <div style={mergeStyles(TEXT_STYLES.caption, {
+                color: COLORS.textMuted,
+                fontSize: DESIGN_TOKENS.typography.sizes.xs
+              })}>
+                Memories
+              </div>
+            </div>
+          </div>
+          
+          <div style={{
+            textAlign: 'center',
+            marginTop: DESIGN_TOKENS.spacing[2],
+            paddingTop: DESIGN_TOKENS.spacing[2],
+            borderTop: `1px solid ${COLORS.borderLight}`
+          }}>
+            <button
+              onClick={() => setShowProfilePage(true)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: COLORS.primary,
+                fontSize: DESIGN_TOKENS.typography.sizes.xs,
+                cursor: 'pointer',
+                textDecoration: 'underline',
+                fontWeight: DESIGN_TOKENS.typography.weights.medium,
+                transition: `color ${DESIGN_TOKENS.motion.durations.fast} ease`
+              }}
+              onMouseEnter={(e) => e.target.style.color = COLORS.primaryHover}
+              onMouseLeave={(e) => e.target.style.color = COLORS.primary}
+            >
+              View detailed stats →
+            </button>
+          </div>
+        </div>
+
+        {/* Status Indicator */}
+        <div style={{
+          marginTop: DESIGN_TOKENS.spacing[3],
+          padding: DESIGN_TOKENS.spacing[2],
+          backgroundColor: `${COLORS.success}15`,
+          border: `1px solid ${COLORS.success}30`,
+          borderRadius: DESIGN_TOKENS.radius.md,
+          textAlign: 'center'
+        }}>
+          <div style={mergeStyles(TEXT_STYLES.caption, {
+            color: COLORS.success,
+            fontWeight: DESIGN_TOKENS.typography.weights.medium,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: DESIGN_TOKENS.spacing[1]
+          })}>
+            <span style={{
+              width: DESIGN_TOKENS.spacing[2],
+              height: DESIGN_TOKENS.spacing[2],
+              backgroundColor: COLORS.success,
+              borderRadius: DESIGN_TOKENS.radius.full,
+              display: 'inline-block',
+              animation: 'pulse 2s infinite'
+            }}></span>
+            Online & Exploring
+          </div>
+          
+          <style>
+            {`
+              @keyframes pulse {
+                0% { opacity: 1; }
+                50% { opacity: 0.5; }
+                100% { opacity: 1; }
+              }
+            `}
+          </style>
         </div>
       </div>
 

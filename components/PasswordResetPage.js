@@ -1,6 +1,15 @@
-// components/PasswordResetPage.js
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import {
+  COLORS,
+  BUTTON_STYLES,
+  INPUT_STYLES,
+  MODAL_STYLES,
+  MESSAGE_STYLES,
+  TEXT_STYLES,
+  DESIGN_TOKENS,
+  mergeStyles
+} from '../constants/styles';
 
 export default function PasswordResetPage() {
   const [password, setPassword] = useState('');
@@ -64,146 +73,106 @@ export default function PasswordResetPage() {
 
   if (!isValidSession) {
     return (
-      <div style={{
-        position: 'fixed',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        background: 'white',
-        padding: '30px',
-        borderRadius: '12px',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-        maxWidth: '400px',
-        textAlign: 'center'
-      }}>
-        <h2 style={{ color: '#dc3545', marginBottom: '20px' }}>Reset Link Invalid</h2>
-        <p style={{ color: '#666', marginBottom: '20px' }}>
-          {error || 'This password reset link is invalid or has expired.'}
-        </p>
-        <button
-          onClick={() => window.location.href = '/'}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#2563eb',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer'
-          }}
-        >
-          Return to Glyph
-        </button>
+      <div style={MODAL_STYLES.overlay}>
+        <div style={MODAL_STYLES.small}>
+          <h2 style={mergeStyles(TEXT_STYLES.h2, {
+            textAlign: 'center',
+            marginBottom: DESIGN_TOKENS.spacing[5],
+            color: COLORS.error
+          })}>
+            Reset Link Invalid
+          </h2>
+          
+          <p style={mergeStyles(TEXT_STYLES.bodySecondary, {
+            textAlign: 'center',
+            marginBottom: DESIGN_TOKENS.spacing[5]
+          })}>
+            {error || 'This password reset link is invalid or has expired.'}
+          </p>
+          
+          <button
+            onClick={() => window.location.href = '/'}
+            style={mergeStyles(
+              BUTTON_STYLES.base,
+              BUTTON_STYLES.primary,
+              { width: '100%' }
+            )}
+          >
+            Return to Glyph
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
-      background: 'white',
-      padding: '30px',
-      borderRadius: '12px',
-      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-      minWidth: '350px',
-      maxWidth: '400px'
-    }}>
-      <h2 style={{ textAlign: 'center', marginBottom: '20px', color: '#333' }}>
-        Set New Password
-      </h2>
-      
-      {error && (
-        <div style={{
-          background: '#fee',
-          color: '#c33',
-          padding: '10px',
-          borderRadius: '6px',
-          marginBottom: '15px',
-          fontSize: '14px'
-        }}>
-          {error}
-        </div>
-      )}
+    <div style={MODAL_STYLES.overlay}>
+      <div style={MODAL_STYLES.small}>
+        <h2 style={mergeStyles(TEXT_STYLES.h2, {
+          textAlign: 'center',
+          marginBottom: DESIGN_TOKENS.spacing[5]
+        })}>
+          Set New Password
+        </h2>
+        
+        {/* Error Message */}
+        {error && (
+          <div style={mergeStyles(MESSAGE_STYLES.base, MESSAGE_STYLES.error)}>
+            {error}
+          </div>
+        )}
 
-      {message && (
-        <div style={{
-          background: '#efe',
-          color: '#363',
-          padding: '10px',
-          borderRadius: '6px',
-          marginBottom: '15px',
-          fontSize: '14px'
-        }}>
-          {message}
-        </div>
-      )}
+        {/* Success Message */}
+        {message && (
+          <div style={mergeStyles(MESSAGE_STYLES.base, MESSAGE_STYLES.success)}>
+            {message}
+          </div>
+        )}
 
-      <form onSubmit={handlePasswordReset}>
-        <div style={{ marginBottom: '15px' }}>
-          <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
-            New Password:
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-            style={{
-              width: '100%',
-              padding: '12px',
-              border: '2px solid #e1e5e9',
-              borderRadius: '8px',
-              fontSize: '16px',
-              boxSizing: 'border-box'
-            }}
-            placeholder="Enter new password"
-          />
-        </div>
+        <form onSubmit={handlePasswordReset}>
+          <div style={{ marginBottom: DESIGN_TOKENS.spacing[4] }}>
+            <label style={TEXT_STYLES.label}>
+              New Password:
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+              style={INPUT_STYLES.base}
+              placeholder="Enter new password"
+            />
+          </div>
 
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
-            Confirm Password:
-          </label>
-          <input
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-            minLength={6}
-            style={{
-              width: '100%',
-              padding: '12px',
-              border: '2px solid #e1e5e9',
-              borderRadius: '8px',
-              fontSize: '16px',
-              boxSizing: 'border-box'
-            }}
-            placeholder="Confirm new password"
-          />
-        </div>
+          <div style={{ marginBottom: DESIGN_TOKENS.spacing[5] }}>
+            <label style={TEXT_STYLES.label}>
+              Confirm Password:
+            </label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              minLength={6}
+              style={INPUT_STYLES.base}
+              placeholder="Confirm new password"
+            />
+          </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            width: '100%',
-            padding: '14px',
-            backgroundColor: loading ? '#ccc' : '#28a745',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '16px',
-            fontWeight: '600',
-            cursor: loading ? 'not-allowed' : 'pointer',
-            transition: 'background-color 0.2s'
-          }}
-        >
-          {loading ? 'Updating...' : 'Update Password'}
-        </button>
-      </form>
+          <button
+            type="submit"
+            disabled={loading}
+            style={mergeStyles(
+              BUTTON_STYLES.base,
+              loading ? BUTTON_STYLES.disabled : BUTTON_STYLES.success,
+              { width: '100%' }
+            )}
+          >
+            {loading ? 'Updating...' : 'Update Password'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

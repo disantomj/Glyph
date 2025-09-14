@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { GlyphService } from '../services/GlyphService';
 import { InteractionService } from '../services/InteractionService';
+import {
+  COLORS,
+  BUTTON_STYLES,
+  INPUT_STYLES,
+  MODAL_STYLES,
+  CARD_STYLES,
+  TEXT_STYLES,
+  DESIGN_TOKENS,
+  LAYOUT,
+  mergeStyles
+} from '../constants/styles';
 
 export default function GlyphDetailModal({ glyph, user, onClose, onGlyphUpdated, onGlyphDeleted }) {
   const [glyphData, setGlyphData] = useState(glyph);
@@ -138,11 +149,11 @@ export default function GlyphDetailModal({ glyph, user, onClose, onGlyphUpdated,
           key={i}
           onClick={interactive ? () => handleRating(i) : undefined}
           style={{
-            fontSize: '20px',
-            color: i <= rating ? '#ffc107' : '#e9ecef',
+            fontSize: DESIGN_TOKENS.typography.sizes.xl,
+            color: i <= rating ? COLORS.warning : COLORS.borderMedium,
             cursor: interactive ? 'pointer' : 'default',
-            marginRight: '2px',
-            transition: 'color 0.2s'
+            marginRight: DESIGN_TOKENS.spacing[1],
+            transition: `color ${DESIGN_TOKENS.motion.durations.fast} ease`
           }}
         >
           ⭐
@@ -154,92 +165,69 @@ export default function GlyphDetailModal({ glyph, user, onClose, onGlyphUpdated,
 
   if (loading) {
     return (
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        zIndex: 2000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        <div style={{
-          background: 'white',
-          padding: '30px',
-          borderRadius: '12px',
+      <div style={MODAL_STYLES.overlay}>
+        <div style={mergeStyles(CARD_STYLES.elevated, {
+          padding: DESIGN_TOKENS.spacing[8],
           textAlign: 'center'
-        }}>
-          Loading glyph details...
+        })}>
+          <div style={mergeStyles(TEXT_STYLES.body, {
+            color: COLORS.textSecondary
+          })}>
+            Loading glyph details...
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      zIndex: 2000,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '20px'
-    }}>
-      <div style={{
-        background: 'white',
-        borderRadius: '16px',
-        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
-        maxWidth: '600px',
-        width: '100%',
-        maxHeight: '90vh',
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column'
-      }}>
+    <div style={MODAL_STYLES.overlay}>
+      <div style={MODAL_STYLES.content}>
         {/* Header */}
         <div style={{
-          padding: '25px',
-          borderBottom: '1px solid #e1e5e9',
+          padding: DESIGN_TOKENS.spacing[6],
+          borderBottom: `1px solid ${COLORS.borderLight}`,
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center'
+          alignItems: 'center',
+          background: DESIGN_TOKENS.palette.accent.purple.gradient
         }}>
           <div>
-            <h2 style={{ 
-              margin: '0 0 5px 0', 
-              fontSize: '24px', 
-              color: '#333',
+            <h2 style={mergeStyles(TEXT_STYLES.h2, { 
+              margin: `0 0 ${DESIGN_TOKENS.spacing[1]} 0`,
               display: 'flex',
               alignItems: 'center',
-              gap: '10px'
-            }}>
+              gap: DESIGN_TOKENS.spacing[2],
+              color: COLORS.textInverse
+            })}>
               {categoryIcons[glyphData.category]} {glyphData.category}
             </h2>
-            <p style={{ 
-              margin: 0, 
-              fontSize: '14px', 
-              color: '#666' 
-            }}>
+            <p style={mergeStyles(TEXT_STYLES.caption, {
+              margin: 0,
+              color: `${COLORS.textInverse}CC`
+            })}>
               By {glyphData.users?.username || 'Anonymous'} • {new Date(glyphData.created_at).toLocaleDateString()}
             </p>
           </div>
           <button
             onClick={onClose}
             style={{
-              background: 'none',
+              background: 'rgba(255,255,255,0.2)',
               border: 'none',
-              fontSize: '24px',
+              fontSize: DESIGN_TOKENS.typography.sizes['2xl'],
               cursor: 'pointer',
-              color: '#666',
-              padding: '5px'
+              color: COLORS.textInverse,
+              padding: DESIGN_TOKENS.spacing[1],
+              borderRadius: DESIGN_TOKENS.radius.full,
+              width: '40px',
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: `background-color ${DESIGN_TOKENS.motion.durations.fast} ease`
             }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255,255,255,0.3)'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = 'rgba(255,255,255,0.2)'}
           >
             ✕
           </button>
@@ -249,11 +237,11 @@ export default function GlyphDetailModal({ glyph, user, onClose, onGlyphUpdated,
         <div style={{
           flex: 1,
           overflow: 'auto',
-          padding: '25px'
+          padding: DESIGN_TOKENS.spacing[6]
         }}>
           {/* Photo */}
           {glyphData.photo_url && (
-            <div style={{ marginBottom: '20px' }}>
+            <div style={{ marginBottom: DESIGN_TOKENS.spacing[5] }}>
               <img 
                 src={glyphData.photo_url} 
                 alt="Glyph photo"
@@ -261,43 +249,43 @@ export default function GlyphDetailModal({ glyph, user, onClose, onGlyphUpdated,
                   width: '100%',
                   height: '200px',
                   objectFit: 'cover',
-                  borderRadius: '12px',
-                  border: '1px solid #e1e5e9'
+                  borderRadius: DESIGN_TOKENS.radius.lg,
+                  border: `1px solid ${COLORS.borderLight}`,
+                  boxShadow: DESIGN_TOKENS.shadows.md
                 }}
               />
             </div>
           )}
 
           {/* Message */}
-          <div style={{ marginBottom: '25px' }}>
-            <p style={{ 
-              fontSize: '16px', 
-              lineHeight: '1.5', 
-              color: '#333',
+          <div style={{ marginBottom: DESIGN_TOKENS.spacing[6] }}>
+            <p style={mergeStyles(TEXT_STYLES.body, {
+              lineHeight: DESIGN_TOKENS.typography.lineHeights.relaxed,
               margin: 0,
               whiteSpace: 'pre-wrap'
-            }}>
+            })}>
               {glyphData.text}
             </p>
           </div>
 
           {/* Rating Section */}
-          <div style={{ 
-            marginBottom: '25px',
-            padding: '20px',
-            backgroundColor: '#f8f9fa',
-            borderRadius: '12px'
-          }}>
-            <h4 style={{ margin: '0 0 15px 0', fontSize: '16px', color: '#333' }}>
+          <div style={mergeStyles(CARD_STYLES.base, {
+            marginBottom: DESIGN_TOKENS.spacing[6],
+            padding: DESIGN_TOKENS.spacing[5],
+            backgroundColor: COLORS.bgSecondary
+          })}>
+            <h4 style={mergeStyles(TEXT_STYLES.h3, {
+              margin: `0 0 ${DESIGN_TOKENS.spacing[4]} 0`
+            })}>
               Rating
             </h4>
             
             {/* Average Rating Display */}
             {glyphData.rating_count > 0 && (
-              <div style={{ marginBottom: '15px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ marginBottom: DESIGN_TOKENS.spacing[4] }}>
+                <div style={mergeStyles(LAYOUT.flex, { gap: DESIGN_TOKENS.spacing[2] })}>
                   {renderStars(Math.round(glyphData.rating_avg))}
-                  <span style={{ fontSize: '16px', fontWeight: '500', color: '#333' }}>
+                  <span style={mergeStyles(TEXT_STYLES.body, { fontWeight: DESIGN_TOKENS.typography.weights.medium })}>
                     {glyphData.rating_avg.toFixed(1)} ({glyphData.rating_count} rating{glyphData.rating_count !== 1 ? 's' : ''})
                   </span>
                 </div>
@@ -307,20 +295,27 @@ export default function GlyphDetailModal({ glyph, user, onClose, onGlyphUpdated,
             {/* User Rating */}
             {user && (
               <div>
-                <p style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>
+                <p style={mergeStyles(TEXT_STYLES.caption, {
+                  marginBottom: DESIGN_TOKENS.spacing[2]
+                })}>
                   {userRating ? 'Your rating:' : 'Rate this glyph:'}
                 </p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={mergeStyles(LAYOUT.flex, { gap: DESIGN_TOKENS.spacing[2] })}>
                   {renderStars(userRating || 0, !isSubmittingRating)}
                   {isSubmittingRating && (
-                    <span style={{ fontSize: '14px', color: '#666' }}>Saving...</span>
+                    <span style={mergeStyles(TEXT_STYLES.caption, { color: COLORS.textMuted })}>
+                      Saving...
+                    </span>
                   )}
                 </div>
               </div>
             )}
 
             {!user && (
-              <p style={{ fontSize: '14px', color: '#666', fontStyle: 'italic' }}>
+              <p style={mergeStyles(TEXT_STYLES.caption, {
+                fontStyle: 'italic',
+                color: COLORS.textMuted
+              })}>
                 Sign in to rate this glyph
               </p>
             )}
@@ -328,47 +323,36 @@ export default function GlyphDetailModal({ glyph, user, onClose, onGlyphUpdated,
 
           {/* Comments Section */}
           <div>
-            <h4 style={{ margin: '0 0 15px 0', fontSize: '16px', color: '#333' }}>
+            <h4 style={mergeStyles(TEXT_STYLES.h3, {
+              margin: `0 0 ${DESIGN_TOKENS.spacing[4]} 0`
+            })}>
               Comments ({comments.length})
             </h4>
 
             {/* Add Comment Form */}
             {user && (
-              <form onSubmit={handleAddComment} style={{ marginBottom: '20px' }}>
+              <form onSubmit={handleAddComment} style={{ marginBottom: DESIGN_TOKENS.spacing[5] }}>
                 <textarea
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder="Share your thoughts about this glyph..."
-                  style={{
-                    width: '100%',
-                    minHeight: '80px',
-                    padding: '12px',
-                    border: '2px solid #e1e5e9',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontFamily: 'inherit',
-                    resize: 'vertical',
-                    boxSizing: 'border-box',
-                    marginBottom: '10px'
-                  }}
+                  style={mergeStyles(INPUT_STYLES.base, INPUT_STYLES.textarea, {
+                    marginBottom: DESIGN_TOKENS.spacing[2]
+                  })}
                   maxLength={500}
                 />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '12px', color: '#666' }}>
+                <div style={mergeStyles(LAYOUT.flexBetween)}>
+                  <span style={mergeStyles(TEXT_STYLES.caption, { color: COLORS.textMuted })}>
                     {newComment.length}/500 characters
                   </span>
                   <button
                     type="submit"
                     disabled={isSubmittingComment || !newComment.trim()}
-                    style={{
-                      padding: '8px 16px',
-                      backgroundColor: isSubmittingComment || !newComment.trim() ? '#ccc' : '#2563eb',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      cursor: isSubmittingComment || !newComment.trim() ? 'not-allowed' : 'pointer',
-                      fontSize: '14px'
-                    }}
+                    style={mergeStyles(
+                      BUTTON_STYLES.base,
+                      isSubmittingComment || !newComment.trim() ? BUTTON_STYLES.disabled : BUTTON_STYLES.primary,
+                      BUTTON_STYLES.small
+                    )}
                   >
                     {isSubmittingComment ? 'Posting...' : 'Post Comment'}
                   </button>
@@ -377,14 +361,16 @@ export default function GlyphDetailModal({ glyph, user, onClose, onGlyphUpdated,
             )}
 
             {!user && (
-              <div style={{
-                padding: '15px',
-                backgroundColor: '#f8f9fa',
-                borderRadius: '8px',
-                marginBottom: '20px',
-                textAlign: 'center'
-              }}>
-                <p style={{ margin: 0, fontSize: '14px', color: '#666' }}>
+              <div style={mergeStyles(CARD_STYLES.base, {
+                padding: DESIGN_TOKENS.spacing[4],
+                marginBottom: DESIGN_TOKENS.spacing[5],
+                textAlign: 'center',
+                backgroundColor: COLORS.bgSecondary
+              })}>
+                <p style={mergeStyles(TEXT_STYLES.caption, { 
+                  margin: 0,
+                  color: COLORS.textMuted
+                })}>
                   Sign in to leave a comment
                 </p>
               </div>
@@ -395,42 +381,50 @@ export default function GlyphDetailModal({ glyph, user, onClose, onGlyphUpdated,
               {comments.length === 0 ? (
                 <div style={{
                   textAlign: 'center',
-                  padding: '30px',
-                  color: '#666',
-                  fontSize: '14px'
+                  padding: DESIGN_TOKENS.spacing[8],
+                  color: COLORS.textMuted
                 }}>
-                  No comments yet. Be the first to share your thoughts!
+                  <div style={{ 
+                    fontSize: DESIGN_TOKENS.typography.sizes['5xl'], 
+                    marginBottom: DESIGN_TOKENS.spacing[4] 
+                  }}>
+                    💭
+                  </div>
+                  <div style={mergeStyles(TEXT_STYLES.body, { marginBottom: DESIGN_TOKENS.spacing[2] })}>
+                    No comments yet
+                  </div>
+                  <div style={TEXT_STYLES.caption}>
+                    Be the first to share your thoughts!
+                  </div>
                 </div>
               ) : (
                 comments.map((comment) => (
                   <div
                     key={comment.id}
                     style={{
-                      padding: '15px',
-                      borderBottom: '1px solid #e1e5e9',
-                      lastChild: { borderBottom: 'none' }
+                      padding: DESIGN_TOKENS.spacing[4],
+                      borderBottom: `1px solid ${COLORS.borderLight}`
                     }}
                   >
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: '8px'
-                    }}>
-                      <span style={{ fontWeight: '500', fontSize: '14px', color: '#333' }}>
+                    <div style={mergeStyles(LAYOUT.flexBetween, {
+                      marginBottom: DESIGN_TOKENS.spacing[2]
+                    })}>
+                      <span style={mergeStyles(TEXT_STYLES.caption, { 
+                        fontWeight: DESIGN_TOKENS.typography.weights.medium,
+                        color: COLORS.textPrimary
+                      })}>
                         {comment.users?.username || 'Anonymous'}
                       </span>
-                      <span style={{ fontSize: '12px', color: '#666' }}>
+                      <span style={mergeStyles(TEXT_STYLES.caption, { color: COLORS.textMuted })}>
                         {new Date(comment.created_at).toLocaleDateString()}
                       </span>
                     </div>
-                    <p style={{
+                    <p style={mergeStyles(TEXT_STYLES.body, {
                       margin: 0,
-                      fontSize: '14px',
-                      lineHeight: '1.4',
-                      color: '#555',
+                      lineHeight: DESIGN_TOKENS.typography.lineHeights.normal,
+                      color: COLORS.textSecondary,
                       whiteSpace: 'pre-wrap'
-                    }}>
+                    })}>
                       {comment.comment}
                     </p>
                   </div>
@@ -442,34 +436,26 @@ export default function GlyphDetailModal({ glyph, user, onClose, onGlyphUpdated,
 
         {/* Footer */}
         <div style={{
-          padding: '20px 25px',
-          borderTop: '1px solid #e1e5e9',
-          backgroundColor: '#f8f9fa',
+          padding: DESIGN_TOKENS.spacing[5],
+          borderTop: `1px solid ${COLORS.borderLight}`,
+          backgroundColor: COLORS.bgSecondary,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          gap: '10px'
+          gap: DESIGN_TOKENS.spacing[2]
         }}>
-          <div style={{ fontSize: '12px', color: '#666' }}>
+          <div style={mergeStyles(TEXT_STYLES.caption, { color: COLORS.textMuted })}>
             📍 {glyphData.latitude.toFixed(6)}, {glyphData.longitude.toFixed(6)}
           </div>
           
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: DESIGN_TOKENS.spacing[2] }}>
             {/* Delete Button - only show for memory owner */}
             {user && glyphData.user_id === user.id && (
               <>
                 {!showDeleteConfirm ? (
                   <button
                     onClick={() => setShowDeleteConfirm(true)}
-                    style={{
-                      padding: '10px 20px',
-                      backgroundColor: '#dc3545',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontSize: '14px'
-                    }}
+                    style={mergeStyles(BUTTON_STYLES.base, BUTTON_STYLES.error)}
                   >
                     Delete Memory
                   </button>
@@ -478,29 +464,16 @@ export default function GlyphDetailModal({ glyph, user, onClose, onGlyphUpdated,
                     <button
                       onClick={handleDelete}
                       disabled={isDeleting}
-                      style={{
-                        padding: '10px 20px',
-                        backgroundColor: '#dc3545',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '8px',
-                        cursor: isDeleting ? 'not-allowed' : 'pointer',
-                        fontSize: '14px'
-                      }}
+                      style={mergeStyles(
+                        BUTTON_STYLES.base,
+                        isDeleting ? BUTTON_STYLES.disabled : BUTTON_STYLES.error
+                      )}
                     >
                       {isDeleting ? 'Deleting...' : 'Confirm Delete'}
                     </button>
                     <button
                       onClick={() => setShowDeleteConfirm(false)}
-                      style={{
-                        padding: '10px 20px',
-                        backgroundColor: '#6c757d',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        fontSize: '14px'
-                      }}
+                      style={mergeStyles(BUTTON_STYLES.base, BUTTON_STYLES.secondary)}
                     >
                       Cancel
                     </button>
@@ -512,15 +485,7 @@ export default function GlyphDetailModal({ glyph, user, onClose, onGlyphUpdated,
             {/* Close Button */}
             <button
               onClick={onClose}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#6c757d',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
+              style={mergeStyles(BUTTON_STYLES.base, BUTTON_STYLES.secondary)}
             >
               Close
             </button>

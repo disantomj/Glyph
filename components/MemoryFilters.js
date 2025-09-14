@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 import { getCategoryIcon, GLYPH_CATEGORIES } from '../constants/categories';
-import { COLORS, CARD_STYLES, mergeStyles } from '../constants/styles';
+import {
+  COLORS,
+  CARD_STYLES,
+  TEXT_STYLES,
+  DESIGN_TOKENS,
+  LAYOUT,
+  mergeStyles
+} from '../constants/styles';
 
 export default function MemoryFilters({ onFilterChange, memoryCount = 0 }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -8,15 +15,15 @@ export default function MemoryFilters({ onFilterChange, memoryCount = 0 }) {
   const [selectedTimeframe, setSelectedTimeframe] = useState('all');
 
   const timeframes = [
-    { value: 'all', label: 'All Time' },
-    { value: 'today', label: 'Today' },
-    { value: 'week', label: 'This Week' },
-    { value: 'month', label: 'This Month' },
-    { value: 'year', label: 'This Year' }
+    { value: 'all', label: 'All Time', icon: '📅' },
+    { value: 'today', label: 'Today', icon: '🌅' },
+    { value: 'week', label: 'This Week', icon: '📆' },
+    { value: 'month', label: 'This Month', icon: '🗓️' },
+    { value: 'year', label: 'This Year', icon: '📊' }
   ];
 
   const categories = [
-    { value: 'all', label: 'All Categories', icon: '📍' },
+    { value: 'all', label: 'All Categories', icon: '📋' },
     ...Object.values(GLYPH_CATEGORIES).map(cat => ({
       value: cat,
       label: cat,
@@ -35,39 +42,70 @@ export default function MemoryFilters({ onFilterChange, memoryCount = 0 }) {
   };
 
   return (
-    <div style={{
+    <div style={mergeStyles(CARD_STYLES.glass, {
       position: 'absolute',
-      top: '80px',
+      top: DESIGN_TOKENS.spacing[20],
       left: '50%',
       transform: 'translateX(-50%)',
-      zIndex: 1000,
-      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-      borderRadius: '12px',
-      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-      border: `1px solid ${COLORS.BORDER_LIGHT}`,
-      overflow: 'hidden'
-    }}>
-      {/* Collapsed View */}
+      zIndex: DESIGN_TOKENS.zIndex.overlay,
+      overflow: 'hidden',
+      minWidth: '280px',
+      maxWidth: '400px'
+    })}>
+      {/* Collapsed View Header */}
       <div 
         style={{
-          padding: '10px 16px',
+          padding: `${DESIGN_TOKENS.spacing[2]} ${DESIGN_TOKENS.spacing[4]}`,
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
-          fontSize: '14px',
-          fontWeight: '500',
-          color: COLORS.TEXT_PRIMARY
+          gap: DESIGN_TOKENS.spacing[2],
+          transition: `all ${DESIGN_TOKENS.motion.durations.fast} ease`,
+          borderBottom: isExpanded ? `1px solid ${COLORS.borderLight}` : 'none'
         }}
         onClick={() => setIsExpanded(!isExpanded)}
+        onMouseEnter={(e) => {
+          if (!isExpanded) {
+            e.currentTarget.style.backgroundColor = `${COLORS.primary}10`;
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isExpanded) {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }
+        }}
       >
-        <span>📋</span>
-        <span>{memoryCount} Memories</span>
+        <span style={{
+          fontSize: DESIGN_TOKENS.typography.sizes.lg,
+          filter: `drop-shadow(0 0 3px ${COLORS.primary})`
+        }}>
+          📋
+        </span>
+        
+        <div style={{ flex: 1 }}>
+          <div style={mergeStyles(TEXT_STYLES.caption, {
+            fontWeight: DESIGN_TOKENS.typography.weights.semibold,
+            color: COLORS.textPrimary,
+            marginBottom: DESIGN_TOKENS.spacing[0]
+          })}>
+            {memoryCount} Memories
+          </div>
+          
+          {(selectedCategory !== 'all' || selectedTimeframe !== 'all') && (
+            <div style={mergeStyles(TEXT_STYLES.caption, {
+              color: COLORS.textMuted,
+              fontSize: DESIGN_TOKENS.typography.sizes.xs
+            })}>
+              Filtered • {selectedCategory !== 'all' ? selectedCategory : ''} {selectedTimeframe !== 'all' ? selectedTimeframe : ''}
+            </div>
+          )}
+        </div>
+        
         <span style={{ 
-          fontSize: '12px', 
-          color: COLORS.TEXT_MUTED,
+          fontSize: DESIGN_TOKENS.typography.sizes.xs,
+          color: COLORS.textMuted,
           transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-          transition: 'transform 0.2s'
+          transition: `transform ${DESIGN_TOKENS.motion.durations.fast} ease`
         }}>
           ▼
         </span>
@@ -76,49 +114,71 @@ export default function MemoryFilters({ onFilterChange, memoryCount = 0 }) {
       {/* Expanded Filters */}
       {isExpanded && (
         <div style={{
-          borderTop: `1px solid ${COLORS.BORDER_LIGHT}`,
-          padding: '15px'
+          padding: DESIGN_TOKENS.spacing[4],
+          backgroundColor: `${COLORS.bgPrimary}95`,
+          backdropFilter: 'blur(8px)'
         }}>
           {/* Category Filter */}
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ 
-              display: 'block', 
-              marginBottom: '8px', 
-              fontSize: '12px', 
-              fontWeight: '600',
-              color: COLORS.TEXT_SECONDARY,
-              textTransform: 'uppercase'
-            }}>
+          <div style={{ marginBottom: DESIGN_TOKENS.spacing[4] }}>
+            <label style={mergeStyles(TEXT_STYLES.label, {
+              marginBottom: DESIGN_TOKENS.spacing[2],
+              fontSize: DESIGN_TOKENS.typography.sizes.xs,
+              fontWeight: DESIGN_TOKENS.typography.weights.semibold,
+              color: COLORS.textSecondary,
+              textTransform: 'uppercase',
+              letterSpacing: DESIGN_TOKENS.typography.letterSpacing.wide
+            })}>
               Category
             </label>
             <div style={{
               display: 'flex',
               flexWrap: 'wrap',
-              gap: '6px'
+              gap: DESIGN_TOKENS.spacing[1]
             }}>
               {categories.map(cat => (
                 <button
                   key={cat.value}
                   onClick={() => handleCategoryChange(cat.value)}
-                  style={{
-                    padding: '6px 10px',
+                  style={mergeStyles(CARD_STYLES.base, {
+                    padding: `${DESIGN_TOKENS.spacing[1]} ${DESIGN_TOKENS.spacing[2]}`,
                     border: 'none',
-                    borderRadius: '16px',
-                    fontSize: '12px',
+                    borderRadius: DESIGN_TOKENS.radius.full,
+                    fontSize: DESIGN_TOKENS.typography.sizes.xs,
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '4px',
-                    transition: 'all 0.2s',
+                    gap: DESIGN_TOKENS.spacing[1],
+                    transition: `all ${DESIGN_TOKENS.motion.durations.fast} ease`,
                     backgroundColor: selectedCategory === cat.value 
-                      ? COLORS.PRIMARY 
-                      : COLORS.BG_LIGHT,
+                      ? COLORS.primary 
+                      : COLORS.bgSecondary,
                     color: selectedCategory === cat.value 
-                      ? 'white' 
-                      : COLORS.TEXT_SECONDARY
+                      ? COLORS.textInverse 
+                      : COLORS.textSecondary,
+                    fontWeight: selectedCategory === cat.value 
+                      ? DESIGN_TOKENS.typography.weights.medium 
+                      : DESIGN_TOKENS.typography.weights.normal,
+                    boxShadow: selectedCategory === cat.value 
+                      ? DESIGN_TOKENS.shadows.sm 
+                      : 'none',
+                    transform: selectedCategory === cat.value ? 'scale(1.05)' : 'scale(1)'
+                  })}
+                  onMouseEnter={(e) => {
+                    if (selectedCategory !== cat.value) {
+                      e.target.style.backgroundColor = `${COLORS.primary}20`;
+                      e.target.style.transform = 'scale(1.02)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (selectedCategory !== cat.value) {
+                      e.target.style.backgroundColor = COLORS.bgSecondary;
+                      e.target.style.transform = 'scale(1)';
+                    }
                   }}
                 >
-                  <span>{cat.icon}</span>
+                  <span style={{ fontSize: DESIGN_TOKENS.typography.sizes.sm }}>
+                    {cat.icon}
+                  </span>
                   <span>{cat.label}</span>
                 </button>
               ))}
@@ -127,45 +187,111 @@ export default function MemoryFilters({ onFilterChange, memoryCount = 0 }) {
 
           {/* Time Filter */}
           <div>
-            <label style={{ 
-              display: 'block', 
-              marginBottom: '8px', 
-              fontSize: '12px', 
-              fontWeight: '600',
-              color: COLORS.TEXT_SECONDARY,
-              textTransform: 'uppercase'
-            }}>
+            <label style={mergeStyles(TEXT_STYLES.label, {
+              marginBottom: DESIGN_TOKENS.spacing[2],
+              fontSize: DESIGN_TOKENS.typography.sizes.xs,
+              fontWeight: DESIGN_TOKENS.typography.weights.semibold,
+              color: COLORS.textSecondary,
+              textTransform: 'uppercase',
+              letterSpacing: DESIGN_TOKENS.typography.letterSpacing.wide
+            })}>
               Timeframe
             </label>
             <div style={{
               display: 'flex',
               flexWrap: 'wrap',
-              gap: '6px'
+              gap: DESIGN_TOKENS.spacing[1]
             }}>
               {timeframes.map(time => (
                 <button
                   key={time.value}
                   onClick={() => handleTimeframeChange(time.value)}
-                  style={{
-                    padding: '6px 12px',
+                  style={mergeStyles(CARD_STYLES.base, {
+                    padding: `${DESIGN_TOKENS.spacing[1]} ${DESIGN_TOKENS.spacing[3]}`,
                     border: 'none',
-                    borderRadius: '16px',
-                    fontSize: '12px',
+                    borderRadius: DESIGN_TOKENS.radius.full,
+                    fontSize: DESIGN_TOKENS.typography.sizes.xs,
                     cursor: 'pointer',
-                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: DESIGN_TOKENS.spacing[1],
+                    transition: `all ${DESIGN_TOKENS.motion.durations.fast} ease`,
                     backgroundColor: selectedTimeframe === time.value 
-                      ? COLORS.SUCCESS 
-                      : COLORS.BG_LIGHT,
+                      ? COLORS.success 
+                      : COLORS.bgSecondary,
                     color: selectedTimeframe === time.value 
-                      ? 'white' 
-                      : COLORS.TEXT_SECONDARY
+                      ? COLORS.textInverse 
+                      : COLORS.textSecondary,
+                    fontWeight: selectedTimeframe === time.value 
+                      ? DESIGN_TOKENS.typography.weights.medium 
+                      : DESIGN_TOKENS.typography.weights.normal,
+                    boxShadow: selectedTimeframe === time.value 
+                      ? DESIGN_TOKENS.shadows.sm 
+                      : 'none',
+                    transform: selectedTimeframe === time.value ? 'scale(1.05)' : 'scale(1)'
+                  })}
+                  onMouseEnter={(e) => {
+                    if (selectedTimeframe !== time.value) {
+                      e.target.style.backgroundColor = `${COLORS.success}20`;
+                      e.target.style.transform = 'scale(1.02)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (selectedTimeframe !== time.value) {
+                      e.target.style.backgroundColor = COLORS.bgSecondary;
+                      e.target.style.transform = 'scale(1)';
+                    }
                   }}
                 >
-                  {time.label}
+                  <span style={{ fontSize: DESIGN_TOKENS.typography.sizes.sm }}>
+                    {time.icon}
+                  </span>
+                  <span>{time.label}</span>
                 </button>
               ))}
             </div>
           </div>
+
+          {/* Clear Filters Button */}
+          {(selectedCategory !== 'all' || selectedTimeframe !== 'all') && (
+            <div style={{
+              marginTop: DESIGN_TOKENS.spacing[4],
+              paddingTop: DESIGN_TOKENS.spacing[3],
+              borderTop: `1px solid ${COLORS.borderLight}`,
+              textAlign: 'center'
+            }}>
+              <button
+                onClick={() => {
+                  setSelectedCategory('all');
+                  setSelectedTimeframe('all');
+                  onFilterChange({ category: 'all', timeframe: 'all' });
+                }}
+                style={{
+                  background: 'none',
+                  border: `1px solid ${COLORS.borderMedium}`,
+                  borderRadius: DESIGN_TOKENS.radius.md,
+                  padding: `${DESIGN_TOKENS.spacing[1]} ${DESIGN_TOKENS.spacing[3]}`,
+                  color: COLORS.textMuted,
+                  fontSize: DESIGN_TOKENS.typography.sizes.xs,
+                  cursor: 'pointer',
+                  transition: `all ${DESIGN_TOKENS.motion.durations.fast} ease`,
+                  fontWeight: DESIGN_TOKENS.typography.weights.medium
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = COLORS.bgMuted;
+                  e.target.style.borderColor = COLORS.primary;
+                  e.target.style.color = COLORS.primary;
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = 'transparent';
+                  e.target.style.borderColor = COLORS.borderMedium;
+                  e.target.style.color = COLORS.textMuted;
+                }}
+              >
+                🗑️ Clear Filters
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
