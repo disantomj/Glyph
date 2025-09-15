@@ -245,7 +245,7 @@ export default function WebMap({ user, userProfile }) {
       {user && (
         <div style={{
           position: 'absolute',
-          top: DESIGN_TOKENS.spacing[2],
+          top: DESIGN_TOKENS.spacing[5],
           left: DESIGN_TOKENS.spacing[2],
           zIndex: DESIGN_TOKENS.zIndex.overlay,
           display: 'flex',
