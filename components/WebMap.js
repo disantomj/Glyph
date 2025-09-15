@@ -164,7 +164,7 @@ export default function WebMap({ user, userProfile }) {
       return;
     }
     
-    if (userLocation.accuracy > 10) {
+    if (userLocation.accuracy > 200) {
       alert(ERROR_MESSAGES.GPS_ACCURACY_LOW);
       return;
     }
