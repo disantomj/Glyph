@@ -1,173 +1,85 @@
 # Glyph Explorer
 
-Web Application
+A location-based discovery platform where users create and discover contextual memories tied to specific geographic coordinates. Demonstrates full-stack development with real-time geolocation, social features, and complex state management.
 
-A location-based discovery platform that allows users to create and discover contextual memories tied to specific geographic locations. Built with React (Expo web) featuring real-time geolocation, social interactions, and gamified exploration mechanics.
+## Live Application Features
 
-## Features
+### Dual-Mode Interface
+- **Personal Memory Mode**: Private location-based journal with filtering and organization
+- **Community Explorer Mode**: Discover content created by other users nearby
+- **Seamless Mode Switching**: Dynamic UI adaptation based on user context
 
-### Core Functionality
-- **Dual Mode Operation**: Toggle between personal memory management and community exploration
-- **Web-Based GPS Discovery**: Create and discover content using browser geolocation services
-- **Interactive Mapping**: Full-screen map interface powered by Mapbox GL JS
-- **Location Validation**: GPS accuracy requirements ensure reliable glyph placement
-- **Photo Integration**: Drag-and-drop image upload with preview functionality
+### Location Intelligence
+- **GPS Integration**: Browser geolocation with accuracy validation
+- **Interactive Mapping**: Real-time Mapbox integration with custom markers
+- **Proximity Discovery**: Find content within configurable radius distances
+- **Location Validation**: Accuracy thresholds prevent unreliable placements
 
 ### Social & Gamification
-- **User Authentication**: Secure sign-up/sign-in with Supabase Auth
-- **Discovery Streaks**: Track daily exploration activities with achievement milestones
-- **Rating System**: Community-driven content evaluation
-- **Comment System**: Social interaction on discovered content
-- **User Profiles**: Comprehensive statistics and achievement tracking
+- **User Authentication**: Complete sign-up/sign-in flow with Supabase
+- **Discovery Streaks**: Daily exploration tracking with milestone achievements
+- **Community Ratings**: Five-star rating system with aggregate scoring
+- **Threaded Comments**: User discussions on discovered content
+- **Rich User Profiles**: Statistics, achievements, and activity history
 
 ### Content Management
-- **Categorized Glyphs**: Five content types (Hint, Warning, Secret, Praise, Lore)
-- **Advanced Filtering**: Filter personal memories by category and timeframe
-- **Content Moderation**: User-owned content management and deletion
-- **Rich Media Support**: Image upload with preview and validation
+- **Categorized Content**: Five content types (Hint, Warning, Secret, Praise, Lore)
+- **Photo Integration**: Image upload with preview and cloud storage
+- **Advanced Filtering**: Filter personal content by category and timeframe
+- **Full CRUD Operations**: Create, read, update, delete with proper authorization
 
-## Technical Architecture
+## Technical Implementation
 
-### Frontend
-- **Framework**: React (Expo web target) with modern JavaScript
-- **State Management**: Custom React hooks for modular state handling
-- **Styling**: Comprehensive design system with centralized theming
-- **Maps**: Mapbox GL JS for interactive web mapping
-- **Browser APIs**: Geolocation API integration for location services
+### Architecture Highlights
+- **Custom Hook Architecture**: Modular state management (useLocation, useGlyphs, useStreak, useAuth)
+- **Service Layer Pattern**: Business logic separation from UI components
+- **Centralized Design System**: Token-based styling with theme switching capability
+- **Component Composition**: Reusable UI components with consistent APIs
 
-### Backend Services
+### Technology Stack
+- **Frontend**: React (Expo web) with modern JavaScript/ES6+
 - **Database**: Supabase PostgreSQL with Row Level Security
 - **Authentication**: Supabase Auth with email/password
 - **File Storage**: Supabase Storage for image management
-- **Real-time Features**: Location-based queries with distance calculations
+- **Mapping**: Mapbox GL JS for interactive web maps
+- **Deployment**: Vercel with GitHub integration
 
-### Key Architectural Patterns
-- **Service Layer**: Dedicated services for business logic separation
-- **Custom Hooks**: Modular state management (useLocation, useGlyphs, useStreak)
-- **Design System**: Token-based styling with theme variants
-- **Error Boundaries**: Comprehensive error handling and user feedback
+### Notable Technical Solutions
+- **Complex State Orchestration**: Coordinated state across location services, user modes, and real-time updates
+- **Browser Geolocation Handling**: Robust permission management and error handling across different browsers
+- **Efficient Map Rendering**: Marker deduplication and optimized rendering for geographic datasets
+- **Scalable Styling Architecture**: Design token system enabling rapid theme changes and consistent UI
+- **Real-time Distance Calculations**: Haversine formula implementation for proximity-based features
 
-## Project Structure
+## Key Development Challenges
 
-```
-src/
-├── components/           # React components
-│   ├── AddGlyph.js      # Glyph creation modal
-│   ├── Auth.js          # Authentication interface
-│   ├── WebMap.js        # Main map component
-│   └── ...
-├── services/            # Business logic layer
-│   ├── GlyphService.js  # Glyph CRUD operations
-│   ├── LocationService.js # Distance calculations
-│   └── StreakService.js # Gamification logic
-├── hooks/               # Custom React hooks
-│   ├── useLocation.js   # GPS and location management
-│   ├── useGlyphs.js    # Glyph state management
-│   └── useStreak.js    # Achievement tracking
-├── constants/           # Configuration and styling
-│   ├── styles.js       # Design system
-│   ├── config.js       # App configuration
-│   └── categories.js   # Content categorization
-└── lib/
-    └── supabase.js     # Database client
-```
+### Location Services Integration
+Implemented comprehensive browser geolocation with permission handling, accuracy validation, and user feedback systems to ensure reliable geographic anchoring of content.
 
-## Installation & Setup
+### Multi-Modal State Management
+Developed custom hook architecture to manage complex application state across personal/community modes, authentication states, and real-time location updates.
 
-### Prerequisites
-- Node.js (v16+)
-- npm or yarn
-- Expo CLI
-- Supabase account
-- Mapbox account
+### Performance Optimization
+Built efficient marker rendering system to handle potentially large datasets of geographic points while maintaining smooth map interactions.
 
-### Environment Variables
-Create a `.env` file with the following variables:
+### Design System Architecture
+Created modular styling system with centralized theme management, enabling rapid visual changes and consistent component APIs across the application.
 
-```env
-EXPO_PUBLIC_SUPABASE_URL=your_supabase_project_url
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-EXPO_PUBLIC_MAPBOX_TOKEN=your_mapbox_access_token
-```
+## Development Methodology
 
-### Installation
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/glyph-explorer.git
-cd glyph-explorer
+- **Component-Driven Development**: Built reusable UI components with consistent interfaces
+- **Service-Oriented Architecture**: Separated business logic into dedicated service classes
+- **Progressive Enhancement**: Core functionality works without JavaScript, enhanced with interactive features
+- **Production Deployment**: Configured automated deployment pipeline with environment management
 
-# Install dependencies
-npm install
+## Project Scope
 
-# Start development server
-npm start
-```
-
-### Database Setup
-1. Create a new Supabase project
-2. Run the provided SQL migrations to set up tables
-3. Configure Row Level Security policies
-4. Set up Storage bucket for image uploads
-
-### Deployment
-The application is configured for deployment on Vercel with automatic GitHub integration:
-
-```bash
-# Build for production
-npx expo export --platform web
-
-# Deploy to Vercel
-vercel
-```
-
-## Development Highlights
-
-### Mobile-First Location Services
-- Enhanced permission handling for mobile browsers
-- GPS accuracy validation with user feedback
-- Responsive error messaging for location access issues
-
-### Scalable Design System
-- Token-based styling architecture
-- Theme switching capabilities
-- Consistent component API across the application
-
-### Performance Optimizations
-- Efficient marker rendering with deduplication
-- Lazy loading of user-generated content
-- Optimized image handling and storage
-
-## Technical Challenges Solved
-
-- **Browser Geolocation**: Implemented robust location permission handling across different browsers
-- **Map Performance**: Efficient marker rendering and management for geographic datasets
-- **Complex State Management**: Coordinated state across multiple user modes and real-time updates
-- **GPS Accuracy Validation**: Location precision requirements to ensure reliable geographic anchoring
-- **Design System Architecture**: Scalable styling system with centralized theme management
-
-## Future Roadmap
-
-- **Mobile Application**: Native mobile app with enhanced touch interactions (in development)
-- Offline functionality with service workers
-- Push notifications for proximity-based discoveries
-- Advanced analytics dashboard for exploration patterns
-- AR integration for enhanced discovery experience
-
-## Contributing
-
-This project demonstrates full-stack development capabilities including:
-- Complex state management and architectural planning
+This application demonstrates end-to-end development capabilities including:
+- Complex frontend state management and architecture
 - Real-time geolocation and mapping integration
-- Comprehensive user authentication and authorization
-- Responsive design system implementation
-- Production deployment and optimization
+- Full-stack authentication and authorization
+- Database design with security considerations
+- File upload and cloud storage integration
+- Production deployment and DevOps practices
 
-## License
-
-This project is developed as a portfolio demonstration of modern web development practices and technical problem-solving capabilities.
-
----
-
-**Live Demo**: [Your Deployment URL]  
-**Developer**: [Your Name]  
-**Contact**: [Your Email]
+**Note**: This is a web application optimized for desktop browsers. Mobile optimization is planned for future development.
