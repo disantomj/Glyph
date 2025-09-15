@@ -1,6 +1,6 @@
 # Glyph Explorer
 
-**[Live Demo](glyph-topaz.vercel.app)** | Web Application
+Web Application
 
 A location-based discovery platform that allows users to create and discover contextual memories tied to specific geographic locations. Built with React (Expo web) featuring real-time geolocation, social interactions, and gamified exploration mechanics.
 
