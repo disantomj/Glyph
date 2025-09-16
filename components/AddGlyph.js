@@ -20,8 +20,7 @@ import {
   MESSAGE_STYLES,
   TEXT_STYLES,
   CARD_STYLES,
-  SPACING,
-  RADIUS,
+  DESIGN_TOKENS,
   mergeStyles 
 } from '../constants/styles';
 
@@ -138,17 +137,17 @@ export default function AddGlyph({ coordinates, onClose, onGlyphCreated, user })
         overflow: 'auto'
       })}>
         <h3 style={mergeStyles(TEXT_STYLES.h3, { 
-          margin: `0 0 ${SPACING[4]} 0`,
+          margin: `0 0 ${DESIGN_TOKENS.spacing[4]} 0`,
           display: 'flex',
           alignItems: 'center',
-          gap: SPACING[2]
+          gap: DESIGN_TOKENS.spacing[2]
         })}>
           🔮 Create New Glyph
         </h3>
         
         <div style={mergeStyles(CARD_STYLES.base, {
-          padding: `${SPACING[2]} ${SPACING[3]}`,
-          marginBottom: SPACING[5],
+          padding: `${DESIGN_TOKENS.spacing[2]} ${DESIGN_TOKENS.spacing[3]}`,
+          marginBottom: DESIGN_TOKENS.spacing[5],
           backgroundColor: COLORS.bgSecondary,
           fontSize: TEXT_STYLES.caption.fontSize,
           color: COLORS.textSecondary
@@ -158,7 +157,7 @@ export default function AddGlyph({ coordinates, onClose, onGlyphCreated, user })
         
         <form onSubmit={handleSubmit}>
           {/* Category Selection */}
-          <div style={{ marginBottom: SPACING[4] }}>
+          <div style={{ marginBottom: DESIGN_TOKENS.spacing[4] }}>
             <label style={TEXT_STYLES.label}>
               Glyph Type:
             </label>
@@ -176,7 +175,7 @@ export default function AddGlyph({ coordinates, onClose, onGlyphCreated, user })
           </div>
 
           {/* Photo Upload Section */}
-          <div style={{ marginBottom: SPACING[4] }}>
+          <div style={{ marginBottom: DESIGN_TOKENS.spacing[4] }}>
             <label style={TEXT_STYLES.label}>
               Photo (optional):
             </label>
@@ -185,11 +184,11 @@ export default function AddGlyph({ coordinates, onClose, onGlyphCreated, user })
               <div 
                 style={mergeStyles(CARD_STYLES.base, {
                   border: `2px dashed ${COLORS.borderMedium}`,
-                  padding: SPACING[5],
+                  padding: DESIGN_TOKENS.spacing[5],
                   textAlign: 'center',
                   backgroundColor: COLORS.bgSecondary,
                   cursor: 'pointer',
-                  transition: `border-color ${MOTION.durations.fast} ease`,
+                  transition: `border-color ${DESIGN_TOKENS.motion.durations.fast} ease`,
                   ':hover': {
                     borderColor: COLORS.primary
                   }
@@ -200,12 +199,12 @@ export default function AddGlyph({ coordinates, onClose, onGlyphCreated, user })
               >
                 <div style={{ 
                   fontSize: '32px', 
-                  marginBottom: SPACING[2] 
+                  marginBottom: DESIGN_TOKENS.spacing[2] 
                 }}>
                   📷
                 </div>
                 <p style={mergeStyles(TEXT_STYLES.body, { 
-                  margin: `0 0 ${SPACING[1]} 0`
+                  margin: `0 0 ${DESIGN_TOKENS.spacing[1]} 0`
                 })}>
                   Click to add a photo
                 </p>
@@ -229,7 +228,7 @@ export default function AddGlyph({ coordinates, onClose, onGlyphCreated, user })
                     width: '100%',
                     height: '150px',
                     objectFit: 'cover',
-                    borderRadius: RADIUS.md,
+                    borderRadius: DESIGN_TOKENS.radius.md,
                     border: `2px solid ${COLORS.borderLight}`
                   }}
                 />
@@ -238,12 +237,12 @@ export default function AddGlyph({ coordinates, onClose, onGlyphCreated, user })
                   onClick={removePhoto}
                   style={{
                     position: 'absolute',
-                    top: SPACING[2],
-                    right: SPACING[2],
+                    top: DESIGN_TOKENS.spacing[2],
+                    right: DESIGN_TOKENS.spacing[2],
                     backgroundColor: COLORS.error,
                     color: COLORS.textInverse,
                     border: 'none',
-                    borderRadius: RADIUS.full,
+                    borderRadius: DESIGN_TOKENS.radius.full,
                     width: '24px',
                     height: '24px',
                     cursor: 'pointer',
@@ -251,13 +250,13 @@ export default function AddGlyph({ coordinates, onClose, onGlyphCreated, user })
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    boxShadow: SHADOWS.md
+                    boxShadow: DESIGN_TOKENS.shadows.md
                   }}
                 >
                   ✕
                 </button>
                 <div style={mergeStyles(TEXT_STYLES.caption, {
-                  marginTop: SPACING[2],
+                  marginTop: DESIGN_TOKENS.spacing[2],
                   textAlign: 'center'
                 })}>
                   {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(1)}MB)
@@ -267,7 +266,7 @@ export default function AddGlyph({ coordinates, onClose, onGlyphCreated, user })
           </div>
           
           {/* Message Input */}
-          <div style={{ marginBottom: SPACING[5] }}>
+          <div style={{ marginBottom: DESIGN_TOKENS.spacing[5] }}>
             <label style={TEXT_STYLES.label}>
               Message:
             </label>
@@ -281,7 +280,7 @@ export default function AddGlyph({ coordinates, onClose, onGlyphCreated, user })
             />
             <div style={mergeStyles(TEXT_STYLES.caption, {
               textAlign: 'right',
-              marginTop: SPACING[1]
+              marginTop: DESIGN_TOKENS.spacing[1]
             })}>
               {message.length}/{TEXT_LIMITS.GLYPH_MESSAGE_MAX} characters
             </div>
@@ -290,7 +289,7 @@ export default function AddGlyph({ coordinates, onClose, onGlyphCreated, user })
           {/* Action Buttons */}
           <div style={{ 
             display: 'flex', 
-            gap: SPACING[3] 
+            gap: DESIGN_TOKENS.spacing[3] 
           }}>
             <button 
               type="submit" 

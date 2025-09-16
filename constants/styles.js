@@ -1,13 +1,3 @@
-// ========================================
-// GLYPH DESIGN SYSTEM
-// ========================================
-// Single source of truth for all visual design
-// Change themes, colors, and UI here only
-
-// ========================================
-// 1. DESIGN TOKENS (Foundation)
-// ========================================
-
 // Color Palette - Change these to completely transform the app
 const PALETTE = {
   // Primary Brand Colors
